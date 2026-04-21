@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auto Lobby — Certify April MCRs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    html, body { font-family: 'Inter', system-ui, sans-serif; }
+    body { background: #fafaf9; color: #0c0a09; }
+    .ring-accent { box-shadow: 0 0 0 2px rgba(16,122,87,.15); }
+    .fade-in { animation: fadeIn 220ms ease-out; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(4px);} to { opacity:1; transform:translateY(0);} }
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+    details[open] .chev { transform: rotate(90deg); }
+    .chev { transition: transform 150ms ease; }
+    .auto-dot { width:6px; height:6px; border-radius:50%; display:inline-block; }
+    kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; padding: 2px 5px; border: 1px solid #e7e5e4; border-bottom-width: 2px; border-radius: 4px; background: white; color: #44403c; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Top nav -->
+  <header class="bg-white border-b border-stone-200">
+    <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white font-bold text-[13px]">AL</div>
+          <span class="font-semibold text-stone-900">Auto Lobby</span>
+        </div>
+        <nav class="flex items-center gap-1 text-sm">
+          <a class="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100" href="#">Dashboard</a>
+          <a class="px-3 py-1.5 rounded-md text-stone-900 bg-stone-100 font-medium" href="#">Filings</a>
+          <a class="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100" href="#">Activity log</a>
+          <a class="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100" href="#">Registration</a>
+          <a class="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100" href="#">Team</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="text-xs text-stone-500">Auto Lobby has been working · <span class="text-stone-900">last run 4 min ago</span></div>
+        <button class="flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-stone-100">
+          <div class="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center text-[11px] font-semibold text-stone-700">JS</div>
+          <span class="text-sm text-stone-700">Deep Sky</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8">
+
+    <!-- HERO: the single action -->
+    <section class="grid grid-cols-3 gap-6 mb-6">
+      <div class="col-span-2 bg-white border border-stone-200 rounded-2xl p-6 relative overflow-hidden">
+        <div class="absolute -top-16 -right-16 w-64 h-64 bg-gradient-to-br from-emerald-100/70 to-teal-100/30 rounded-full blur-3xl"></div>
+        <div class="relative">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-[11px] font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-wide">Ready to certify</span>
+            <span class="text-xs text-stone-500">Deadline May 15 · 25 days away</span>
+          </div>
+          <h1 class="text-[28px] font-semibold text-stone-900 leading-tight">April MCRs — pre-drafted by Auto Lobby</h1>
+          <p class="text-stone-600 mt-2 max-w-2xl">14 filings drafted from your calendar, cross-checked against the DPOH registry, and populated with subjects inferred from your org profile and past filings. Nothing needs your review.</p>
+
+          <div class="flex items-center gap-3 mt-5">
+            <button class="text-[15px] px-5 py-2.5 rounded-lg bg-emerald-700 text-white font-semibold hover:bg-emerald-800 shadow-sm">
+              Certify &amp; submit all 14 →
+            </button>
+            <button class="text-sm px-4 py-2.5 rounded-lg border border-stone-200 hover:bg-stone-50">Review individually first</button>
+            <span class="text-xs text-stone-500 ml-2">Opens LRS · you'll authenticate with GCKey</span>
+          </div>
+
+          <!-- Chain of what the system did -->
+          <div class="mt-6 pt-5 border-t border-stone-100 grid grid-cols-5 gap-4">
+            <div>
+              <div class="text-xs text-stone-500">Meetings scanned</div>
+              <div class="text-xl font-semibold text-stone-900">126</div>
+            </div>
+            <div>
+              <div class="text-xs text-stone-500">Gov. attendees detected</div>
+              <div class="text-xl font-semibold text-stone-900">43</div>
+            </div>
+            <div>
+              <div class="text-xs text-stone-500">DPOHs confirmed</div>
+              <div class="text-xl font-semibold text-emerald-800">19</div>
+            </div>
+            <div>
+              <div class="text-xs text-stone-500">Classified as lobbying</div>
+              <div class="text-xl font-semibold text-emerald-800">14</div>
+            </div>
+            <div>
+              <div class="text-xs text-stone-500">Your time spent</div>
+              <div class="text-xl font-semibold text-stone-900">0 min</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Org profile -->
+      <div class="bg-white border border-stone-200 rounded-2xl p-5">
+        <div class="flex items-start justify-between mb-3">
+          <div class="text-xs font-medium text-stone-500 uppercase tracking-wide">Org profile</div>
+          <button class="text-xs text-emerald-800 hover:underline">Edit</button>
+        </div>
+        <div class="text-base font-semibold text-stone-900">Deep Sky</div>
+        <div class="text-sm text-stone-600">Climate tech · Direct air capture</div>
+        <div class="mt-3 text-xs text-stone-500">Registrant since Oct 2024 · CEO Phil Campbell</div>
+
+        <div class="mt-4 pt-4 border-t border-stone-100 space-y-3">
+          <div>
+            <div class="text-xs text-stone-500 mb-1.5">Default subjects <span class="text-stone-400">· used for auto-fill</span></div>
+            <div class="flex flex-wrap gap-1">
+              <span class="text-[11px] px-1.5 py-0.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded">Environment</span>
+              <span class="text-[11px] px-1.5 py-0.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded">Climate</span>
+              <span class="text-[11px] px-1.5 py-0.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded">Energy</span>
+              <span class="text-[11px] px-1.5 py-0.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded">Science &amp; Tech</span>
+              <span class="text-[11px] px-1.5 py-0.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded">Industry</span>
+              <span class="text-[11px] px-1.5 py-0.5 bg-stone-100 text-stone-700 border border-stone-200 rounded">Taxation</span>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs text-stone-500 mb-1.5">Employees tracked</div>
+            <div class="flex -space-x-1.5">
+              <div class="w-6 h-6 rounded-full bg-emerald-100 border-2 border-white flex items-center justify-center text-[10px] font-semibold text-emerald-800">PC</div>
+              <div class="w-6 h-6 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-[10px] font-semibold text-blue-800">AP</div>
+              <div class="w-6 h-6 rounded-full bg-purple-100 border-2 border-white flex items-center justify-center text-[10px] font-semibold text-purple-800">LC</div>
+              <div class="w-6 h-6 rounded-full bg-amber-100 border-2 border-white flex items-center justify-center text-[10px] font-semibold text-amber-800">JO</div>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs text-stone-500 mb-1">Key institutions this quarter</div>
+            <div class="text-sm text-stone-800">NRCan · ECCC · Finance · ISED</div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-stone-100">
+          <div class="text-xs text-stone-500 mb-1">Auto-fill coverage this batch</div>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 h-2 bg-stone-100 rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-600" style="width:94%"></div>
+            </div>
+            <span class="text-sm font-semibold text-stone-900">94%</span>
+          </div>
+          <div class="text-[11px] text-stone-500 mt-1">of fields filled without asking you</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ATTENTION needed (only the genuine outliers) -->
+    <section class="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+      <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 text-lg font-bold shrink-0">!</div>
+      <div class="flex-1">
+        <div class="text-sm font-semibold text-amber-900">1 item needs your input before certification</div>
+        <div class="text-sm text-amber-900/90 mt-0.5">Apr 19 coffee meeting has an unresolved attendee ("Pat McDonald" at <code class="text-xs bg-white/60 px-1 rounded">@nrcan-rncan.gc.ca</code>). Auto Lobby needs you to confirm their role so it can decide whether this meeting is reportable.</div>
+        <div class="mt-2 flex items-center gap-2">
+          <button class="text-xs px-2.5 py-1 rounded-md bg-amber-800 text-white font-medium hover:bg-amber-900">Resolve attendee →</button>
+          <button class="text-xs px-2.5 py-1 rounded-md hover:bg-amber-100 text-amber-900">Dismiss (not a DPOH)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pre-submission checks -->
+    <section class="mb-6 bg-white border border-stone-200 rounded-xl p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-stone-900">Pre-submission checks</h2>
+        <span class="text-xs text-stone-500">Auto Lobby ran 8 validations before queueing this batch</span>
+      </div>
+      <div class="grid grid-cols-2 gap-x-6 gap-y-2">
+        <div class="flex items-start gap-2 text-sm"><span class="text-emerald-600 mt-0.5">✓</span><span class="text-stone-700">14 / 14 MCRs within the 15-day filing window</span></div>
+        <div class="flex items-start gap-2 text-sm"><span class="text-emerald-600 mt-0.5">✓</span><span class="text-stone-700">All DPOHs resolved via GEDS + Parl. directory</span></div>
+        <div class="flex items-start gap-2 text-sm"><span class="text-emerald-600 mt-0.5">✓</span><span class="text-stone-700">Subject matters matched to active registration</span></div>
+        <div class="flex items-start gap-2 text-sm"><span class="text-emerald-600 mt-0.5">✓</span><span class="text-stone-700">1 new subject ("Taxation") — registration update drafted</span></div>
+        <div class="flex items-start gap-2 text-sm"><span class="text-emerald-600 mt-0.5">✓</span><span class="text-stone-700">No duplicate meetings with overlapping attendees</span></div>
+        <div class="flex items-start gap-2 text-sm"><span class="text-emerald-600 mt-0.5">✓</span><span class="text-stone-700">Threshold clock: 7h 55m of 8h — registration still valid</span></div>
+        <div class="flex items-start gap-2 text-sm"><span class="text-emerald-600 mt-0.5">✓</span><span class="text-stone-700">All employee lobbyists named in active registration</span></div>
+        <div class="flex items-start gap-2 text-sm"><span class="text-amber-600 mt-0.5">!</span><span class="text-stone-700">1 unresolved attendee (Pat McDonald) — see above</span></div>
+      </div>
+    </section>
+
+    <!-- FILINGS LIST -->
+    <section class="bg-white border border-stone-200 rounded-xl overflow-hidden mb-24">
+      <div class="px-5 py-3 border-b border-stone-100 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <h2 class="text-sm font-semibold text-stone-900">14 pre-drafted MCRs</h2>
+          <span class="text-xs text-stone-500">Click any row to see provenance of every field</span>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-stone-500">
+          <span class="inline-flex items-center gap-1"><span class="auto-dot bg-emerald-500"></span>Auto-filled, high confidence</span>
+          <span class="inline-flex items-center gap-1"><span class="auto-dot bg-amber-500"></span>Auto-filled, verify</span>
+          <span class="inline-flex items-center gap-1"><span class="auto-dot bg-stone-300"></span>From org profile</span>
+        </div>
+      </div>
+
+      <ul id="filings" class="divide-y divide-stone-100"></ul>
+    </section>
+
+    <!-- Sticky footer CTA -->
+    <div class="fixed bottom-4 left-0 right-0 pointer-events-none">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="bg-white border border-stone-200 rounded-xl shadow-lg p-3 flex items-center justify-between pointer-events-auto">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold">14</div>
+            <div>
+              <div class="text-sm font-semibold text-stone-900">MCRs ready · 1 needs input</div>
+              <div class="text-xs text-stone-500">You can certify now and resolve the outlier later, or handle it first.</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="text-sm px-3 py-2 rounded-md hover:bg-stone-100">Save &amp; close</button>
+            <button class="text-sm px-4 py-2 rounded-md bg-emerald-700 text-white font-semibold hover:bg-emerald-800">Certify &amp; submit all →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Illustrative filings, each field carrying provenance.
+    const SOURCES = {
+      calendar: { dot: 'bg-emerald-500', label: 'From calendar event' },
+      geds: { dot: 'bg-emerald-500', label: 'Resolved via GEDS' },
+      parl: { dot: 'bg-emerald-500', label: 'Parliament of Canada directory' },
+      exempt: { dot: 'bg-emerald-500', label: 'Ministerial exempt-staff registry' },
+      profile: { dot: 'bg-stone-400', label: 'From Deep Sky org profile' },
+      pastFilings: { dot: 'bg-emerald-500', label: 'Learned from past Deep Sky filings' },
+      title: { dot: 'bg-emerald-500', label: 'Inferred from meeting title' },
+      registration: { dot: 'bg-emerald-500', label: 'Active registration' },
+      llm: { dot: 'bg-amber-500', label: 'Drafted · verify wording' },
+    };
+
+    const FILINGS = [
+      {
+        id: 1, date: 'Apr 2', title: 'DAC incentive structure — call w/ Min. Finance advisor',
+        employee: 'Phil Campbell',
+        institution: { v: 'Department of Finance Canada', src: 'exempt' },
+        dpohs: [{ name: 'Dana Reyes', role: 'Senior Policy Advisor, Minister of Finance', src: 'exempt' }],
+        subjects: [ { v:'Taxation and Finance', src:'title' }, { v:'Climate', src:'profile' }, { v:'Industry', src:'registration' } ],
+        description: { v:'Discussion of proposed amendments to the Clean Technology ITC to explicitly include mineralization-based carbon removal projects. Outlined Deep Sky\'s Québec pilot and cost trajectory.', src:'llm' },
+        duration: '30m',
+      },
+      {
+        id: 2, date: 'Apr 3', title: 'Standing call · NRCan Clean Tech Division',
+        employee: 'Alex Petrin',
+        institution: { v:'Natural Resources Canada (NRCan)', src:'geds' },
+        dpohs: [{ name: 'James Ikeda', role: 'Assistant Deputy Minister, Clean Technology', src:'geds' }],
+        subjects: [ { v:'Energy', src:'pastFilings' }, { v:'Science and Technology', src:'profile' }, { v:'Environment', src:'registration' } ],
+        description: { v:'Quarterly technology-readiness update on direct air capture deployment and requested clarifications on SIF Stream 5 eligibility.', src:'llm' },
+        duration: '45m',
+      },
+      {
+        id: 3, date: 'Apr 8', title: 'Lunch — MP Sam Liu (Sustainable Economy Caucus)',
+        employee: 'Phil Campbell',
+        institution: { v:'House of Commons', src:'parl' },
+        dpohs: [{ name: 'Sam Liu', role: 'Member of Parliament', src:'parl' }],
+        subjects: [ { v:'Environment', src:'profile' }, { v:'Climate', src:'profile' } ],
+        description: { v:'Overview of Canada\'s carbon-removal industry landscape and Deep Sky\'s Québec operations in the context of the caucus\'s upcoming whitepaper.', src:'llm' },
+        duration: '60m',
+      },
+      {
+        id: 4, date: 'Apr 14', title: 'Briefing on Canadian carbon-removal policy framework',
+        employee: 'Phil Campbell',
+        institution: { v:'Environment and Climate Change Canada (ECCC)', src:'exempt' },
+        dpohs: [
+          { name: 'Sarah Chen', role: 'Deputy Minister, NRCan', src:'geds' },
+          { name: 'Marc Tremblay', role: 'Chief of Staff, Min. ECCC', src:'exempt' },
+        ],
+        subjects: [ { v:'Environment', src:'registration' }, { v:'Climate', src:'profile' }, { v:'Science and Technology', src:'profile' } ],
+        description: { v:'Joint briefing on the federal carbon-removal policy framework, Deep Sky\'s regulatory priorities, and alignment between ECCC and NRCan on accounting standards.', src:'llm' },
+        duration: '45m',
+      },
+      {
+        id: 5, date: 'Apr 16', title: 'ITC amendment follow-up — Parl. Sec. Lin Zhou',
+        employee: 'Phil Campbell',
+        institution: { v:'Department of Finance Canada', src:'parl' },
+        dpohs: [{ name: 'Lin Zhou', role: 'Parliamentary Secretary to the Minister of Finance', src:'parl' }],
+        subjects: [ { v:'Taxation and Finance', src:'title' }, { v:'Environment', src:'profile' } ],
+        description: { v:'Follow-up on proposed ITC amendment language; committed to submit a short written summary of Deep Sky\'s mineralization cost model.', src:'llm' },
+        duration: '20m',
+      },
+      // Remaining filings collapsed into a summary for illustration
+    ];
+
+    function dotFor(srcKey) {
+      const s = SOURCES[srcKey] || SOURCES.calendar;
+      return `<span class="auto-dot ${s.dot}" title="${s.label}"></span>`;
+    }
+    function srcLabel(srcKey) { return (SOURCES[srcKey] || SOURCES.calendar).label; }
+
+    function renderChip(text, srcKey, active=true) {
+      const s = SOURCES[srcKey] || SOURCES.profile;
+      return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border ${active ? 'bg-emerald-50 text-emerald-900 border-emerald-200' : 'bg-white text-stone-700 border-stone-200'}" title="${s.label}">
+        <span class="auto-dot ${s.dot}"></span>${text}
+      </span>`;
+    }
+
+    function renderFiling(f) {
+      return `
+        <li class="group">
+          <details class="fade-in">
+            <summary class="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-stone-50">
+              <svg class="chev w-3.5 h-3.5 text-stone-400" viewBox="0 0 20 20" fill="currentColor"><path d="M7 5l6 5-6 5V5Z"/></svg>
+              <div class="w-12 text-xs text-stone-500">${f.date}</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-stone-900 truncate">${f.title}</div>
+                <div class="text-xs text-stone-500 truncate mt-0.5">
+                  ${f.employee} · ${f.institution.v} · ${f.dpohs.map(d => d.name).join(', ')}
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-1 justify-end max-w-[320px]">
+                ${f.subjects.slice(0,3).map(s => renderChip(s.v, s.src)).join('')}
+              </div>
+              <div class="text-xs">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-full font-medium"><span class="auto-dot bg-emerald-500"></span>Auto-drafted</span>
+              </div>
+            </summary>
+            <div class="px-5 pb-5 pl-[76px] bg-stone-50/40 border-t border-stone-100">
+              <div class="grid grid-cols-2 gap-x-8 gap-y-4 pt-4">
+                <div>
+                  <div class="text-[11px] uppercase tracking-wide text-stone-500 mb-1.5 flex items-center gap-2">Institution ${dotFor(f.institution.src)}<span class="text-[10px] text-stone-400">· ${srcLabel(f.institution.src)}</span></div>
+                  <div class="text-sm text-stone-900">${f.institution.v}</div>
+                </div>
+                <div>
+                  <div class="text-[11px] uppercase tracking-wide text-stone-500 mb-1.5 flex items-center gap-2">Duration ${dotFor('calendar')}</div>
+                  <div class="text-sm text-stone-900">${f.duration}</div>
+                </div>
+                <div class="col-span-2">
+                  <div class="text-[11px] uppercase tracking-wide text-stone-500 mb-1.5 flex items-center gap-2">DPOHs present</div>
+                  <div class="space-y-1.5">
+                    ${f.dpohs.map(d => `
+                      <div class="flex items-center gap-2 text-sm">
+                        <span class="text-[10px] font-semibold px-1.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-200 rounded">DPOH</span>
+                        <span class="text-stone-900">${d.name}</span>
+                        <span class="text-stone-500">· ${d.role}</span>
+                        ${dotFor(d.src)}
+                        <span class="text-[10px] text-stone-400">${srcLabel(d.src)}</span>
+                      </div>`).join('')}
+                  </div>
+                </div>
+                <div class="col-span-2">
+                  <div class="text-[11px] uppercase tracking-wide text-stone-500 mb-1.5 flex items-center gap-2">Subject matters</div>
+                  <div class="flex flex-wrap gap-1.5">
+                    ${f.subjects.map(s => renderChip(s.v, s.src)).join('')}
+                  </div>
+                  <div class="mt-2 text-[11px] text-stone-500">Selection explained: matched against <span class="text-stone-700">meeting title</span> + <span class="text-stone-700">Deep Sky's last 12 filings</span> + <span class="text-stone-700">active registration subjects</span>. Auto Lobby excluded 3 low-signal subjects.</div>
+                </div>
+                <div class="col-span-2">
+                  <div class="text-[11px] uppercase tracking-wide text-stone-500 mb-1.5 flex items-center gap-2">
+                    MCR description ${dotFor(f.description.src)}
+                    <span class="text-[10px] text-stone-400">· drafted from meeting title + Deep Sky's filing voice · edit inline</span>
+                  </div>
+                  <div class="text-sm text-stone-900 bg-white border border-stone-200 rounded-lg p-3">${f.description.v}</div>
+                </div>
+              </div>
+              <div class="mt-4 flex items-center justify-between">
+                <div class="text-xs text-stone-500">This MCR is ready. No input needed from you.</div>
+                <div class="flex items-center gap-2">
+                  <button class="text-xs px-2.5 py-1 rounded-md border border-stone-200 hover:bg-white">Edit</button>
+                  <button class="text-xs px-2.5 py-1 rounded-md border border-stone-200 hover:bg-white">Exclude from filing</button>
+                </div>
+              </div>
+            </div>
+          </details>
+        </li>`;
+    }
+
+    // Render shown filings
+    document.getElementById('filings').innerHTML = FILINGS.map(renderFiling).join('') +
+      `<li class="px-5 py-3.5 text-xs text-stone-500 bg-stone-50/50 border-t border-stone-100">+ 9 more MCRs (collapsed for illustration)</li>`;
+  </script>
+</body>
+</html>

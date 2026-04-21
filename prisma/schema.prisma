@@ -1,0 +1,303 @@
+// Auto Lobby starter schema.
+// Multi-tenant from day 1. Event-sourced audit trail.
+// Provenance on every auto-filled field.
+// See docs/Detection-Pipeline.md for the model narrative.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// Tenancy
+// ============================================================
+
+model Tenant {
+  id             String   @id @default(cuid())
+  name           String
+  industry       String?
+  jurisdiction   String   @default("federal") // federal | provincial | municipal | multi
+  registrationId String?  // OCL registration ID if active
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orgProfile          OrgProfile?
+  employees           Employee[]
+  calendarConnections CalendarConnection[]
+  detectedMeetings    DetectedMeeting[]
+  hoursLedger         HoursLedgerEntry[]
+  auditEvents         AuditEvent[]
+}
+
+/// The seed crystal for all pre-fill logic. Set once at onboarding,
+/// refined over time from user overrides.
+model OrgProfile {
+  id                 String   @id @default(cuid())
+  tenantId           String   @unique
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  defaultSubjects    String[] // subject-matter IDs used as priors
+  keyInstitutions    String[] // institution IDs routinely engaged
+  prepTimeMultiplier Float    @default(0) // 0 = don't auto-count; e.g. 0.25 = 25% prep
+  calendarBodyOptIn  Boolean  @default(false)
+  notesConnectors    Json?    // { granola: true, otter: false, zoomAi: true, ... }
+  filingVoice        String?  // learned sample of this org's MCR description style
+  updatedAt          DateTime @updatedAt
+}
+
+model Employee {
+  id           String  @id @default(cuid())
+  tenantId     String
+  tenant       Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String
+  email        String
+  role         String?
+  isLobbyist   Boolean @default(true)  // named on registration
+  isRegistrant Boolean @default(false) // senior officer who certifies
+  createdAt    DateTime @default(now())
+
+  calendarConnections CalendarConnection[]
+
+  @@unique([tenantId, email])
+}
+
+// ============================================================
+// Calendar ingestion
+// ============================================================
+
+model CalendarConnection {
+  id                String   @id @default(cuid())
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  provider          String   // google | microsoft | icloud | exchange | caldav
+  providerAccountId String
+  bodyOptIn         Boolean  @default(false)
+  lastSyncAt        DateTime?
+  createdAt         DateTime @default(now())
+
+  rawEvents RawCalendarEvent[]
+
+  @@unique([provider, providerAccountId])
+}
+
+model RawCalendarEvent {
+  id             String   @id @default(cuid())
+  connectionId   String
+  connection     CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  externalId     String
+  title          String
+  startAt        DateTime
+  endAt          DateTime
+  organizerEmail String?
+  attendees      Json     // [{ name, email, responseStatus }]
+  body           String?  // only populated when bodyOptIn = true
+  location       String?
+  fetchedAt      DateTime @default(now())
+
+  detectedMeeting DetectedMeeting?
+
+  @@unique([connectionId, externalId])
+  @@index([startAt])
+}
+
+// ============================================================
+// Institution + DPOH registries (proprietary moat)
+// ============================================================
+
+model InstitutionRegistry {
+  id           String   @id @default(cuid())
+  name         String
+  acronym      String?
+  jurisdiction String   // federal | provincial | municipal
+  domains      String[] // email domains that map to this institution
+  isDpohSource Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  officials PublicOfficial[]
+
+  @@index([domains])
+}
+
+model PublicOfficial {
+  id              String   @id @default(cuid())
+  name            String
+  email           String?
+  role            String
+  institutionId   String
+  institution     InstitutionRegistry @relation(fields: [institutionId], references: [id])
+  isDpoh          Boolean
+  dpohBasis       String?  // role | position-designation | office-designation
+  ruleRef         String?  // e.g. "Lobbying Act s. 2(1) 'DPOH' (c)(i)"
+  resolvedFrom    String   // geds | parl | exempt-staff | manual
+  confidence      Float
+  effectiveFrom   DateTime?
+  effectiveUntil  DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([email])
+  @@index([institutionId])
+}
+
+// ============================================================
+// Detection + classification
+// ============================================================
+
+model DetectedMeeting {
+  id                       String   @id @default(cuid())
+  tenantId                 String
+  tenant                   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rawEventId               String   @unique
+  rawEvent                 RawCalendarEvent @relation(fields: [rawEventId], references: [id])
+  title                    String
+  startAt                  DateTime
+  endAt                    DateTime
+  employeeEmail            String
+  institutionId            String?
+  hadDpoh                  Boolean  @default(false)
+  classification           String   // lobbying | not-lobbying | needs-info
+  classificationConfidence Float
+  status                   String   @default("auto-drafted") // auto-drafted | ceo-certified | submitted | excluded | needs-info
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  attendees   MeetingAttendee[]
+  reasons     ClassificationReason[]
+  draftMcr    DraftMcr?
+  hoursLedger HoursLedgerEntry[]
+
+  @@index([tenantId, startAt])
+  @@index([tenantId, classification])
+}
+
+model MeetingAttendee {
+  id                 String   @id @default(cuid())
+  meetingId          String
+  meeting            DetectedMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  name               String
+  email              String
+  resolvedOfficialId String?  // FK to PublicOfficial when resolved
+  isInternal         Boolean  @default(false)
+  isDpoh             Boolean?
+
+  @@index([meetingId])
+}
+
+/// One row per rule/signal that drove a classification verdict.
+/// Feeds the "why we classified this" explainer in the UI.
+model ClassificationReason {
+  id        String  @id @default(cuid())
+  meetingId String
+  meeting   DetectedMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  ok        Boolean? // true = supports verdict, false = refutes, null = neutral/info
+  text      String
+  citation  String?  // e.g. "Lobbying Act s. 5(3)"
+  weight    Float    @default(1.0)
+}
+
+// ============================================================
+// Filings (MCRs)
+// ============================================================
+
+model DraftMcr {
+  id                String   @id @default(cuid())
+  meetingId         String   @unique
+  meeting           DetectedMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  // Public MCR structured fields (what actually goes to OCL)
+  subjects          Json     // [{ subjectId, source }]
+  institutionId     String?
+  namedLobbyists    Json     // [{ employeeId, name }]
+  // Internal narrative (never filed, for audit trail only)
+  description       String?
+  descriptionSource String?  // level-0 | level-1 | level-2 | level-3 | level-4 | manual
+  // Full field-level provenance snapshot at time of draft
+  provenance        Json     // { field: { value, source, confidence } }
+  certifiedAt       DateTime?
+  certifiedById     String?  // Employee id of the senior officer
+  submittedAt       DateTime?
+  lrsReceiptId      String?
+  lrsScreenshot     String?  // evidence URL
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ============================================================
+// Hours accounting — two separate buckets
+// ============================================================
+
+model HoursLedgerEntry {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  meetingId     String
+  meeting       DetectedMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  employeeEmail String
+  bucket        String   // threshold-clock | mcr-reportable
+  minutes       Int
+  kind          String   @default("meeting") // meeting | prep | grassroots
+  recordedAt    DateTime @default(now())
+
+  @@index([tenantId, bucket, recordedAt])
+  @@index([tenantId, employeeEmail, recordedAt])
+}
+
+// ============================================================
+// Audit trail — append-only, never mutate
+// ============================================================
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor     String   // user email or "system"
+  action    String   // detected | classified | drafted | overridden | certified | submitted | acknowledged
+  subject   String   // entity id affected
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, subject])
+}
+
+// ============================================================
+// OCL open-data mirror (read-only reference)
+// Loaded from https://open.canada.ca CSV dumps.
+// ============================================================
+
+model OclPublicRegistration {
+  id              String   @id
+  registrationNum String
+  companyName     String
+  registrantName  String?
+  subjects        String[]
+  institutions    String[]
+  status          String
+  effectiveDate   DateTime?
+  rawPayload      Json
+  ingestedAt      DateTime @default(now())
+
+  @@index([companyName])
+  @@index([registrationNum])
+}
+
+model OclPublicCommReport {
+  id              String   @id
+  registrationId  String
+  communicationDate DateTime
+  institution     String
+  dpohName        String
+  dpohTitle       String?
+  subjects        String[]
+  rawPayload      Json
+  ingestedAt      DateTime @default(now())
+
+  @@index([registrationId])
+  @@index([communicationDate])
+  @@index([dpohName])
+}

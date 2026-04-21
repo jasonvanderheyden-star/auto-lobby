@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auto Lobby — Log a meeting</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { color-scheme: light; }
+    html, body { font-family: 'Inter', system-ui, sans-serif; }
+    body { background: #fafaf9; color: #0c0a09; }
+    .ring-accent { box-shadow: 0 0 0 2px rgba(16, 122, 87, 0.15); }
+    .chip-enter { animation: chipIn 180ms ease-out; }
+    @keyframes chipIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .fade-in { animation: fadeIn 220ms ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .scroll-hide::-webkit-scrollbar { display: none; }
+    .scroll-hide { scrollbar-width: none; }
+    details[open] summary .chev { transform: rotate(90deg); }
+    .chev { transition: transform 150ms ease; }
+    kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; padding: 2px 5px; border: 1px solid #e7e5e4; border-bottom-width: 2px; border-radius: 4px; background: white; color: #44403c; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Top nav -->
+  <header class="bg-white border-b border-stone-200">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white font-bold text-[13px]">AL</div>
+          <span class="font-semibold text-stone-900">Auto Lobby</span>
+        </div>
+        <nav class="flex items-center gap-1 text-sm">
+          <a class="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100" href="#">Dashboard</a>
+          <a class="px-3 py-1.5 rounded-md text-stone-900 bg-stone-100 font-medium" href="#">Filings</a>
+          <a class="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100" href="#">Registration</a>
+          <a class="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100" href="#">Team</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="text-xs text-stone-500">April MCRs due in <span class="text-stone-900 font-medium">25 days</span></div>
+        <button class="flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-stone-100">
+          <div class="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center text-[11px] font-semibold text-stone-700">JS</div>
+          <span class="text-sm text-stone-700">Deep Sky</span>
+          <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 20 20" fill="currentColor"><path d="M5.25 7.5 10 12.25 14.75 7.5Z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-6xl mx-auto px-6 py-8">
+    <!-- Breadcrumb + title -->
+    <div class="flex items-center gap-2 text-sm text-stone-500 mb-2">
+      <a href="#" class="hover:text-stone-800">Filings</a>
+      <span>/</span>
+      <span class="text-stone-800">Log a meeting</span>
+    </div>
+    <div class="flex items-start justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-semibold text-stone-900">Log a meeting</h1>
+        <p class="text-stone-600 mt-1">We detected this meeting on Phil's calendar with a federal official. A few quick confirmations and we'll queue it for the April report.</p>
+      </div>
+      <button class="text-sm text-stone-500 hover:text-stone-800 px-3 py-1.5 rounded-md hover:bg-stone-100">Save draft & exit</button>
+    </div>
+
+    <!-- Stepper -->
+    <div class="flex items-center gap-2 mb-8">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[11px] font-semibold">✓</div>
+        <span class="text-sm text-stone-700 font-medium">Meeting</span>
+      </div>
+      <div class="w-12 h-px bg-stone-300"></div>
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[11px] font-semibold">2</div>
+        <span class="text-sm text-stone-900 font-semibold">What did you discuss?</span>
+      </div>
+      <div class="w-12 h-px bg-stone-300"></div>
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-full bg-stone-200 text-stone-500 flex items-center justify-center text-[11px] font-semibold">3</div>
+        <span class="text-sm text-stone-500">Review</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-8">
+      <!-- Main content: Step 2 focus -->
+      <div class="col-span-2 space-y-6">
+
+        <!-- Meeting summary card (from step 1) -->
+        <section class="bg-white border border-stone-200 rounded-xl p-5">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Meeting</div>
+              <div class="text-base font-semibold text-stone-900">Briefing on Canadian carbon-removal policy framework</div>
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-stone-600">
+                <span class="flex items-center gap-1.5"><svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M5.5 2a.75.75 0 0 1 .75.75V4h7.5V2.75a.75.75 0 0 1 1.5 0V4h.25A2.25 2.25 0 0 1 17.75 6.25v9.5A2.25 2.25 0 0 1 15.5 18h-11A2.25 2.25 0 0 1 2.25 15.75v-9.5A2.25 2.25 0 0 1 4.5 4h.25V2.75A.75.75 0 0 1 5.5 2ZM3.75 8.5v7.25c0 .41.34.75.75.75h11c.41 0 .75-.34.75-.75V8.5H3.75Z"/></svg> Apr 14, 2026 · 2:30 PM</span>
+                <span class="flex items-center gap-1.5"><svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-6.2 15.25a.75.75 0 0 0 .75.75h10.9a.75.75 0 0 0 .74-.86A6.25 6.25 0 0 0 3.8 17.25Z"/></svg> 4 attendees · 2 DPOHs</span>
+                <span class="flex items-center gap-1.5"><svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2 2 6v2c0 4.25 3.42 8.14 8 9 4.58-.86 8-4.75 8-9V6l-8-4Z"/></svg> 45 min</span>
+              </div>
+            </div>
+            <button class="text-sm text-emerald-800 hover:underline">Edit</button>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-1.5">
+            <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-900 text-xs rounded-md border border-emerald-200 font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Phil Campbell (Deep Sky, CEO)
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-900 text-xs rounded-md border border-amber-200 font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Sarah Chen · Deputy Minister, NRCan <span class="text-amber-700">· DPOH</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-900 text-xs rounded-md border border-amber-200 font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Marc Tremblay · Chief of Staff, Min. ECCC <span class="text-amber-700">· DPOH</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-stone-100 text-stone-700 text-xs rounded-md border border-stone-200">
+              James Ortiz · Policy Advisor
+            </span>
+          </div>
+        </section>
+
+        <!-- THE STAR: Subject matter picker -->
+        <section class="bg-white border border-stone-200 rounded-xl overflow-hidden">
+          <div class="px-5 pt-5 pb-4 border-b border-stone-100">
+            <div class="flex items-start justify-between">
+              <div>
+                <h2 class="text-base font-semibold text-stone-900">What did you talk about?</h2>
+                <p class="text-sm text-stone-600 mt-0.5">Pick everything that applies. Most meetings have 2–4 subjects.</p>
+              </div>
+              <div class="text-xs text-stone-500 flex items-center gap-2">
+                <kbd>⌘</kbd> <kbd>K</kbd> <span>to search</span>
+              </div>
+            </div>
+
+            <!-- Selected chips -->
+            <div id="selectedWrap" class="mt-4 flex flex-wrap gap-1.5 min-h-[28px]">
+              <!-- populated via JS -->
+              <span id="selectedEmpty" class="text-sm text-stone-400">No subjects selected yet.</span>
+            </div>
+          </div>
+
+          <!-- Search -->
+          <div class="px-5 py-3 border-b border-stone-100 bg-stone-50/50">
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3a6 6 0 1 0 3.47 10.9l3.31 3.32a.75.75 0 1 0 1.06-1.06l-3.31-3.32A6 6 0 0 0 9 3ZM4.5 9a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0Z" clip-rule="evenodd"/></svg>
+              <input id="search" type="text" placeholder="Search subjects, e.g. carbon pricing, mining permits…"
+                class="w-full pl-9 pr-3 py-2 text-sm bg-white border border-stone-200 rounded-lg placeholder:text-stone-400 focus:outline-none focus:border-emerald-600 focus:ring-accent"/>
+            </div>
+          </div>
+
+          <!-- Suggested for you -->
+          <div id="suggestedBlock" class="px-5 py-4 border-b border-stone-100">
+            <div class="flex items-center gap-2 mb-3">
+              <svg class="w-4 h-4 text-emerald-700" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 0 1 .9.56l2.1 4.3 4.73.69a1 1 0 0 1 .56 1.7l-3.42 3.34.8 4.7a1 1 0 0 1-1.45 1.06L10 16.14l-4.22 2.22a1 1 0 0 1-1.45-1.06l.8-4.7L1.7 9.25a1 1 0 0 1 .56-1.7l4.73-.69 2.1-4.3A1 1 0 0 1 10 2Z"/></svg>
+              <h3 class="text-sm font-semibold text-stone-900">Suggested for this meeting</h3>
+              <span class="text-xs text-stone-500">· Based on meeting title and Deep Sky's past filings</span>
+            </div>
+            <div id="suggested" class="flex flex-wrap gap-1.5"></div>
+          </div>
+
+          <!-- Popular -->
+          <div class="px-5 py-4 border-b border-stone-100">
+            <div class="flex items-center gap-2 mb-3">
+              <svg class="w-4 h-4 text-stone-500" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0V2.25A.75.75 0 0 1 10 1.5Zm0 14a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75ZM17.75 10a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5a.75.75 0 0 1 .75.75ZM4.5 10a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5a.75.75 0 0 1 .75.75ZM10 5.25a4.75 4.75 0 1 1 0 9.5 4.75 4.75 0 0 1 0-9.5Z"/></svg>
+              <h3 class="text-sm font-semibold text-stone-900">Popular among climate-tech filers</h3>
+              <span class="text-xs text-stone-500">· From public OCL registry, last 90 days</span>
+            </div>
+            <div id="popular" class="flex flex-wrap gap-1.5"></div>
+          </div>
+
+          <!-- Browse all, grouped -->
+          <div class="px-5 py-4">
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-sm font-semibold text-stone-900">Browse all subjects</h3>
+              <span class="text-xs text-stone-500" id="browseCount"></span>
+            </div>
+            <div id="groups" class="divide-y divide-stone-100"></div>
+          </div>
+        </section>
+
+        <!-- Summary card (optional) -->
+        <section class="bg-white border border-stone-200 rounded-xl p-5">
+          <h3 class="text-sm font-semibold text-stone-900 mb-1">Brief summary (private to your team)</h3>
+          <p class="text-xs text-stone-500 mb-3">Not filed with OCL — for your audit trail only.</p>
+          <textarea rows="3" placeholder="e.g. Walked the DM through Deep Sky's Québec pilot and asked for clarity on ITC eligibility for mineralization-based removals." class="w-full text-sm border border-stone-200 rounded-lg p-3 placeholder:text-stone-400 focus:outline-none focus:border-emerald-600 focus:ring-accent"></textarea>
+        </section>
+      </div>
+
+      <!-- Right rail -->
+      <aside class="col-span-1">
+        <div class="sticky top-6 space-y-4">
+          <!-- AI helper -->
+          <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/70 rounded-xl p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="w-4 h-4 text-emerald-800" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 0 1 1 1v1.2a6 6 0 0 1 4.8 4.8H17a1 1 0 1 1 0 2h-1.2A6 6 0 0 1 11 15.8V17a1 1 0 1 1-2 0v-1.2a6 6 0 0 1-4.8-4.8H3a1 1 0 1 1 0-2h1.2A6 6 0 0 1 9 4.2V3a1 1 0 0 1 1-1Z"/></svg>
+              <div class="text-sm font-semibold text-emerald-900">Why these suggestions?</div>
+            </div>
+            <p class="text-sm text-emerald-900 leading-relaxed">
+              The meeting title mentions <span class="font-medium">carbon removal</span> and <span class="font-medium">policy framework</span>. Deep Sky's active registration already covers <span class="font-medium">Environment</span> and <span class="font-medium">Science &amp; Technology</span>, and your last 12 MCRs commonly paired these with <span class="font-medium">Energy</span> and <span class="font-medium">Taxation &amp; Finance</span> (for ITC discussions).
+            </p>
+            <div class="mt-3 pt-3 border-t border-emerald-200/60 text-xs text-emerald-800">
+              If you pick a subject that's <em>not</em> on your registration, we'll flag it and draft the registration update in the background.
+            </div>
+          </div>
+
+          <!-- Selection summary -->
+          <div class="bg-white border border-stone-200 rounded-xl p-4">
+            <div class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Your selections</div>
+            <div id="summaryList" class="space-y-1.5"></div>
+            <div id="summaryEmpty" class="text-sm text-stone-400">Pick at least one subject to continue.</div>
+            <div class="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
+              <span class="text-xs text-stone-500"><span id="selCount">0</span> selected</span>
+              <button id="clearBtn" class="text-xs text-stone-500 hover:text-stone-900 hidden">Clear all</button>
+            </div>
+          </div>
+
+          <!-- Compliance check -->
+          <div class="bg-white border border-stone-200 rounded-xl p-4">
+            <div class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-3">Compliance check</div>
+            <ul class="space-y-2 text-sm">
+              <li class="flex items-start gap-2"><span class="text-emerald-600 mt-0.5">✓</span><span class="text-stone-700">Filed within the 15-day deadline</span></li>
+              <li class="flex items-start gap-2"><span class="text-emerald-600 mt-0.5">✓</span><span class="text-stone-700">At least one DPOH confirmed</span></li>
+              <li id="regCheck" class="flex items-start gap-2"><span class="text-stone-400 mt-0.5">○</span><span class="text-stone-500">Subject matters on registration</span></li>
+            </ul>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Sticky footer CTA -->
+    <div class="sticky bottom-4 mt-10">
+      <div class="bg-white border border-stone-200 rounded-xl shadow-lg p-3 flex items-center justify-between">
+        <button class="text-sm text-stone-600 hover:text-stone-900 px-3 py-2">← Back to meeting</button>
+        <div class="flex items-center gap-3">
+          <span id="bottomCount" class="text-xs text-stone-500">No subjects selected</span>
+          <button class="text-sm text-stone-700 px-3 py-2 rounded-md hover:bg-stone-100">Save & close</button>
+          <button id="continueBtn" disabled class="text-sm px-4 py-2 rounded-md bg-emerald-700 text-white font-medium hover:bg-emerald-800 disabled:bg-stone-200 disabled:text-stone-400 disabled:cursor-not-allowed">Continue to review →</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // OCL-style subject matters, grouped thematically.
+    // NOTE: cross-check against OCL open-data canonical list before production.
+    const GROUPS = [
+      {
+        name: 'Climate, Energy & Environment',
+        hint: 'Most relevant for Deep Sky',
+        items: [
+          { id: 'climate', name: 'Climate', related: ['environment', 'energy', 'taxation'] },
+          { id: 'environment', name: 'Environment', related: ['climate', 'science-tech'] },
+          { id: 'energy', name: 'Energy', related: ['climate', 'mining', 'industry'] },
+          { id: 'mining', name: 'Mining', related: ['energy', 'environment'] },
+          { id: 'forestry', name: 'Forestry', related: ['environment', 'climate'] },
+          { id: 'fisheries', name: 'Fisheries', related: ['environment'] },
+        ],
+      },
+      {
+        name: 'Economy & Finance',
+        items: [
+          { id: 'taxation', name: 'Taxation and Finance', related: ['budget', 'industry'] },
+          { id: 'budget', name: 'Budget', related: ['taxation', 'economic-development'] },
+          { id: 'economic-development', name: 'Economic Development', related: ['industry', 'small-business'] },
+          { id: 'small-business', name: 'Small Business', related: ['economic-development', 'taxation'] },
+          { id: 'financial-institutions', name: 'Financial Institutions' },
+          { id: 'pensions', name: 'Pensions' },
+        ],
+      },
+      {
+        name: 'Industry & Innovation',
+        items: [
+          { id: 'industry', name: 'Industry', related: ['economic-development', 'science-tech'] },
+          { id: 'science-tech', name: 'Science and Technology', related: ['climate', 'r-and-d'] },
+          { id: 'r-and-d', name: 'Research and Development', related: ['science-tech', 'industry'] },
+          { id: 'intellectual-property', name: 'Intellectual Property' },
+          { id: 'infrastructure', name: 'Infrastructure', related: ['transportation', 'energy'] },
+          { id: 'telecommunications', name: 'Telecommunications' },
+        ],
+      },
+      {
+        name: 'Trade & International',
+        items: [
+          { id: 'international-trade', name: 'International Trade', related: ['industry', 'internal-trade'] },
+          { id: 'international-relations', name: 'International Relations' },
+          { id: 'internal-trade', name: 'Internal Trade' },
+          { id: 'defence', name: 'Defence' },
+          { id: 'national-security', name: 'National Security' },
+          { id: 'immigration', name: 'Immigration' },
+        ],
+      },
+      {
+        name: 'Health, Labour & Social',
+        items: [
+          { id: 'health', name: 'Health', related: ['pharmaceutical'] },
+          { id: 'pharmaceutical', name: 'Pharmaceutical Industry', related: ['health'] },
+          { id: 'labour', name: 'Labour', related: ['employment'] },
+          { id: 'employment', name: 'Employment and Training', related: ['labour'] },
+          { id: 'education', name: 'Education' },
+          { id: 'housing', name: 'Housing' },
+          { id: 'social-issues', name: 'Social Issues' },
+          { id: 'consumer-issues', name: 'Consumer Issues' },
+        ],
+      },
+      {
+        name: 'Government, Law & Regions',
+        items: [
+          { id: 'government-procurement', name: 'Government Procurement' },
+          { id: 'justice', name: 'Justice and Law Enforcement' },
+          { id: 'privacy', name: 'Privacy and Access to Information' },
+          { id: 'regional-development', name: 'Regional Development' },
+          { id: 'municipalities', name: 'Municipalities' },
+          { id: 'indigenous', name: 'Indigenous Affairs', related: ['regional-development'] },
+        ],
+      },
+      {
+        name: 'Culture, Media & Other',
+        items: [
+          { id: 'arts-culture', name: 'Arts and Culture' },
+          { id: 'broadcasting', name: 'Broadcasting', related: ['telecommunications'] },
+          { id: 'media', name: 'Media' },
+          { id: 'sports', name: 'Sports' },
+          { id: 'tourism', name: 'Tourism' },
+          { id: 'religion', name: 'Religion' },
+          { id: 'agriculture', name: 'Agriculture' },
+          { id: 'transportation', name: 'Transportation', related: ['infrastructure'] },
+          { id: 'labelling', name: 'Labelling' },
+        ],
+      },
+    ];
+
+    // Flatten
+    const ALL = [];
+    const BY_ID = {};
+    GROUPS.forEach(g => g.items.forEach(it => { ALL.push({ ...it, group: g.name }); BY_ID[it.id] = { ...it, group: g.name }; }));
+
+    // Deep Sky registration = already covers these (for the "reg check" UX)
+    const ON_REGISTRATION = new Set(['environment', 'energy', 'science-tech', 'industry']);
+
+    // Suggested (derived from meeting title + past filings)
+    const SUGGESTED_IDS = ['environment', 'climate', 'energy', 'science-tech', 'taxation'];
+    // Popular among climate-tech filers in the last 90 days (illustrative)
+    const POPULAR_IDS = ['environment', 'energy', 'climate', 'industry', 'international-trade', 'taxation', 'r-and-d'];
+
+    const selected = new Set();
+
+    const q = sel => document.querySelector(sel);
+
+    function renderChip(item, { active, removable, variant = 'default' } = {}) {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.dataset.id = item.id;
+      el.className = [
+        'chip-enter inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm border transition-all select-none',
+        active
+          ? 'bg-emerald-700 text-white border-emerald-700 hover:bg-emerald-800'
+          : variant === 'suggested'
+            ? 'bg-white text-emerald-900 border-emerald-200 hover:border-emerald-600 hover:bg-emerald-50'
+            : 'bg-white text-stone-700 border-stone-200 hover:border-stone-400',
+      ].join(' ');
+      const check = active
+        ? '<svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.58l7.3-7.3a1 1 0 0 1 1.4 0Z" clip-rule="evenodd"/></svg>'
+        : '<svg class="w-3.5 h-3.5 opacity-60" viewBox="0 0 20 20" fill="currentColor"><path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z"/></svg>';
+      el.innerHTML = `${check}<span>${item.name}</span>${removable ? '<svg class="w-3.5 h-3.5 opacity-70 hover:opacity-100 ml-0.5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.3 6.3a1 1 0 0 1 1.4 0L10 8.6l2.3-2.3a1 1 0 1 1 1.4 1.4L11.4 10l2.3 2.3a1 1 0 1 1-1.4 1.4L10 11.4l-2.3 2.3a1 1 0 1 1-1.4-1.4L8.6 10 6.3 7.7a1 1 0 0 1 0-1.4Z"/></svg>' : ''}`;
+      el.addEventListener('click', () => toggle(item.id));
+      return el;
+    }
+
+    function toggle(id) {
+      if (selected.has(id)) selected.delete(id); else selected.add(id);
+      renderAll();
+    }
+
+    function renderAll() {
+      // Selected chips at top of the picker
+      const sw = q('#selectedWrap');
+      sw.innerHTML = '';
+      if (!selected.size) {
+        const empty = document.createElement('span');
+        empty.id = 'selectedEmpty';
+        empty.className = 'text-sm text-stone-400';
+        empty.textContent = 'No subjects selected yet.';
+        sw.appendChild(empty);
+      } else {
+        [...selected].forEach(id => sw.appendChild(renderChip(BY_ID[id], { active: true, removable: true })));
+      }
+
+      // Suggested
+      const sug = q('#suggested');
+      sug.innerHTML = '';
+      SUGGESTED_IDS.forEach(id => sug.appendChild(renderChip(BY_ID[id], { active: selected.has(id), variant: 'suggested' })));
+
+      // Popular
+      const pop = q('#popular');
+      pop.innerHTML = '';
+      POPULAR_IDS.forEach(id => pop.appendChild(renderChip(BY_ID[id], { active: selected.has(id) })));
+
+      // Browse groups with search filter
+      const term = q('#search').value.trim().toLowerCase();
+      const groupsEl = q('#groups');
+      groupsEl.innerHTML = '';
+      let visibleCount = 0;
+      GROUPS.forEach((g, idx) => {
+        const items = g.items.filter(it => !term || it.name.toLowerCase().includes(term));
+        if (!items.length) return;
+        visibleCount += items.length;
+        const details = document.createElement('details');
+        details.open = !!term || idx === 0; // expand first group by default, or all when searching
+        details.className = 'py-2';
+        const summary = document.createElement('summary');
+        summary.className = 'flex items-center justify-between cursor-pointer list-none py-1.5 select-none';
+        summary.innerHTML = `
+          <div class="flex items-center gap-2">
+            <svg class="chev w-3.5 h-3.5 text-stone-400" viewBox="0 0 20 20" fill="currentColor"><path d="M7 5l6 5-6 5V5Z"/></svg>
+            <span class="text-sm font-medium text-stone-800">${g.name}</span>
+            ${g.hint ? `<span class="text-xs text-stone-500">· ${g.hint}</span>` : ''}
+          </div>
+          <span class="text-xs text-stone-400">${items.length}</span>`;
+        details.appendChild(summary);
+        const wrap = document.createElement('div');
+        wrap.className = 'flex flex-wrap gap-1.5 py-2 pl-5';
+        items.forEach(it => wrap.appendChild(renderChip(it, { active: selected.has(it.id) })));
+        details.appendChild(wrap);
+        groupsEl.appendChild(details);
+      });
+      q('#browseCount').textContent = term ? `· ${visibleCount} matching` : `· ${ALL.length} total`;
+
+      // Right rail summary
+      const list = q('#summaryList');
+      const empty = q('#summaryEmpty');
+      const clearBtn = q('#clearBtn');
+      list.innerHTML = '';
+      if (!selected.size) {
+        empty.classList.remove('hidden');
+        clearBtn.classList.add('hidden');
+      } else {
+        empty.classList.add('hidden');
+        clearBtn.classList.remove('hidden');
+        [...selected].forEach(id => {
+          const it = BY_ID[id];
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between text-sm fade-in';
+          row.innerHTML = `
+            <span class="text-stone-800">${it.name}</span>
+            ${ON_REGISTRATION.has(id)
+              ? '<span class="text-[10px] uppercase tracking-wide text-emerald-700 font-semibold">On registration</span>'
+              : '<span class="text-[10px] uppercase tracking-wide text-amber-700 font-semibold">Add to reg.</span>'}`;
+          list.appendChild(row);
+        });
+      }
+      q('#selCount').textContent = selected.size;
+
+      // Registration check
+      const regRow = q('#regCheck');
+      const allOnReg = [...selected].every(id => ON_REGISTRATION.has(id));
+      if (!selected.size) {
+        regRow.innerHTML = '<span class="text-stone-400 mt-0.5">○</span><span class="text-stone-500">Subject matters on registration</span>';
+      } else if (allOnReg) {
+        regRow.innerHTML = '<span class="text-emerald-600 mt-0.5">✓</span><span class="text-stone-700">All subjects already on your registration</span>';
+      } else {
+        const off = [...selected].filter(id => !ON_REGISTRATION.has(id)).map(id => BY_ID[id].name);
+        regRow.innerHTML = `<span class="text-amber-500 mt-0.5">!</span><span class="text-stone-700"><span class="font-medium">${off.join(', ')}</span> not on registration yet — we'll draft an update.</span>`;
+      }
+
+      // Bottom bar
+      const cont = q('#continueBtn');
+      const bc = q('#bottomCount');
+      if (!selected.size) {
+        cont.disabled = true;
+        bc.textContent = 'No subjects selected';
+      } else {
+        cont.disabled = false;
+        bc.textContent = `${selected.size} subject${selected.size === 1 ? '' : 's'} selected`;
+      }
+    }
+
+    // Init
+    q('#search').addEventListener('input', renderAll);
+    q('#clearBtn').addEventListener('click', () => { selected.clear(); renderAll(); });
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        q('#search').focus();
+      }
+    });
+
+    // Pre-seed a couple to illustrate (based on suggestion signal)
+    selected.add('environment');
+    selected.add('climate');
+    selected.add('science-tech');
+    renderAll();
+  </script>
+</body>
+</html>

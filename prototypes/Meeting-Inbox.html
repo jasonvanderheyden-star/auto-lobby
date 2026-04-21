@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auto Lobby — Meeting inbox</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    html, body { font-family: 'Inter', system-ui, sans-serif; }
+    body { background: #fafaf9; color: #0c0a09; }
+    .ring-accent { box-shadow: 0 0 0 2px rgba(16,122,87,.15); }
+    .fade-in { animation: fadeIn 220ms ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; padding: 2px 5px; border: 1px solid #e7e5e4; border-bottom-width: 2px; border-radius: 4px; background: white; color: #44403c; }
+    .stripe-warn { background-image: repeating-linear-gradient(135deg, rgba(217,119,6,.1) 0 8px, transparent 8px 16px); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Top nav -->
+  <header class="bg-white border-b border-stone-200">
+    <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white font-bold text-[13px]">AL</div>
+          <span class="font-semibold text-stone-900">Auto Lobby</span>
+        </div>
+        <nav class="flex items-center gap-1 text-sm">
+          <a class="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100" href="#">Dashboard</a>
+          <a class="px-3 py-1.5 rounded-md text-stone-900 bg-stone-100 font-medium" href="#">Inbox</a>
+          <a class="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100" href="#">Filings</a>
+          <a class="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100" href="#">Registration</a>
+          <a class="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100" href="#">Team</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="text-xs text-stone-500">Last calendar sync <span class="text-stone-900">4 min ago</span></div>
+        <button class="flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-stone-100">
+          <div class="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center text-[11px] font-semibold text-stone-700">JS</div>
+          <span class="text-sm text-stone-700">Deep Sky</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <!-- Page header -->
+    <div class="flex items-start justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-semibold text-stone-900">Meeting inbox</h1>
+        <p class="text-stone-600 mt-1">Every meeting we detect with a government attendee lands here. Confirm what counts — we'll handle the rest.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="text-sm px-3 py-1.5 rounded-md border border-stone-200 hover:bg-stone-50">⚙ Detection rules</button>
+        <button class="text-sm px-3 py-1.5 rounded-md border border-stone-200 hover:bg-stone-50">↻ Resync</button>
+      </div>
+    </div>
+
+    <!-- Hours tracker card -->
+    <section class="bg-white border border-stone-200 rounded-xl p-5 mb-6">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-base font-semibold text-stone-900">Registration threshold — federal</h2>
+            <span class="text-[11px] px-1.5 py-0.5 bg-stone-100 text-stone-600 rounded">Rolling 4-week window</span>
+          </div>
+          <p class="text-sm text-stone-600 mt-0.5">OCL threshold: <span class="font-medium text-stone-800">8 hours</span> of lobbying activity across all employees in any consecutive 4-week period <span class="text-stone-500">(effective Jan 19, 2026)</span>.</p>
+        </div>
+        <button class="text-sm text-emerald-800 hover:underline">How is this calculated?</button>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-semibold text-stone-900" id="hoursTotal">5h 20m</span>
+            <span class="text-sm text-stone-500">of 8h threshold</span>
+            <span class="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-900 border border-amber-200 rounded-full font-medium">67% — monitor closely</span>
+          </div>
+          <div class="text-sm text-stone-500">
+            Window: <span class="font-medium text-stone-800">Mar 24 – Apr 20</span>
+          </div>
+        </div>
+        <div class="relative h-3 bg-stone-100 rounded-full overflow-hidden">
+          <div class="absolute inset-y-0 left-0 bg-emerald-600" style="width: 44%"></div>
+          <div class="absolute inset-y-0 bg-emerald-400/70" style="left: 44%; width: 23%"></div>
+          <div class="absolute inset-y-0 stripe-warn" style="left: 67%; width: 8%"></div>
+          <!-- threshold marker at 100% = 8h = where bar ends -->
+        </div>
+        <div class="flex items-center justify-between mt-2 text-xs text-stone-500">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1.5"><span class="w-2 h-2 bg-emerald-600 rounded-sm"></span>Confirmed lobbying · 3h 30m</span>
+            <span class="flex items-center gap-1.5"><span class="w-2 h-2 bg-emerald-400/70 rounded-sm"></span>Pending review · 1h 50m</span>
+            <span class="flex items-center gap-1.5"><span class="w-2 h-2 stripe-warn rounded-sm border border-amber-300"></span>Would cross threshold</span>
+          </div>
+          <span>Threshold reached in ~5 days at current pace</span>
+        </div>
+      </div>
+
+      <!-- Per-employee breakdown -->
+      <details class="border-t border-stone-100 pt-4">
+        <summary class="cursor-pointer text-sm font-medium text-stone-700 hover:text-stone-900 list-none flex items-center gap-2">
+          <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 20 20" fill="currentColor"><path d="M7 5l6 5-6 5V5Z"/></svg>
+          Breakdown by employee
+        </summary>
+        <div class="mt-3 grid grid-cols-4 gap-3 text-sm">
+          <div class="rounded-lg border border-stone-200 p-3">
+            <div class="text-stone-500 text-xs">Phil Campbell · CEO</div>
+            <div class="text-lg font-semibold text-stone-900 mt-1">2h 45m</div>
+            <div class="text-xs text-stone-500">4 meetings</div>
+          </div>
+          <div class="rounded-lg border border-stone-200 p-3">
+            <div class="text-stone-500 text-xs">Alex Petrin · VP Policy</div>
+            <div class="text-lg font-semibold text-stone-900 mt-1">1h 35m</div>
+            <div class="text-xs text-stone-500">2 meetings</div>
+          </div>
+          <div class="rounded-lg border border-stone-200 p-3">
+            <div class="text-stone-500 text-xs">Laurence Côté · Comms</div>
+            <div class="text-lg font-semibold text-stone-900 mt-1">45m</div>
+            <div class="text-xs text-stone-500">1 meeting + prep</div>
+          </div>
+          <div class="rounded-lg border border-stone-200 p-3">
+            <div class="text-stone-500 text-xs">James Ortiz · Policy</div>
+            <div class="text-lg font-semibold text-stone-900 mt-1">15m</div>
+            <div class="text-xs text-stone-500">1 meeting</div>
+          </div>
+        </div>
+        <div class="mt-3 text-xs text-stone-500">Prep time counted per OCL's Jan 2026 bulletin. Adjust in <a href="#" class="text-emerald-800 hover:underline">Detection rules → Preparation time</a>.</div>
+      </details>
+    </section>
+
+    <!-- Integrations ribbon -->
+    <section class="mb-6 bg-stone-50 border border-stone-200 rounded-xl p-4 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="text-xs font-medium text-stone-500 uppercase tracking-wide">Connected</div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-stone-200 rounded-md text-sm"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>Google Workspace <span class="text-stone-500 text-xs">(phil@deepsky...)</span></span>
+          <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-stone-200 rounded-md text-sm"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>Microsoft 365 <span class="text-stone-500 text-xs">(policy team)</span></span>
+          <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-stone-200 rounded-md text-sm text-stone-500"><span class="w-1.5 h-1.5 bg-stone-300 rounded-full"></span>Zoom meetings</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-stone-500">
+        <span>Also supported:</span>
+        <span class="px-1.5 py-0.5 bg-white border border-stone-200 rounded">Exchange</span>
+        <span class="px-1.5 py-0.5 bg-white border border-stone-200 rounded">iCloud</span>
+        <span class="px-1.5 py-0.5 bg-white border border-stone-200 rounded">CalDAV</span>
+        <button class="ml-1 text-emerald-800 hover:underline">+ Connect</button>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <div class="flex items-center gap-1 mb-4 border-b border-stone-200">
+      <button data-tab="review" class="tab-btn px-3 py-2 text-sm font-medium text-stone-900 border-b-2 border-emerald-700 -mb-px">
+        Needs review <span class="ml-1 text-[11px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-full">4</span>
+      </button>
+      <button data-tab="lobbying" class="tab-btn px-3 py-2 text-sm font-medium text-stone-500 hover:text-stone-900">
+        Confirmed lobbying <span class="ml-1 text-[11px] bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded-full">8</span>
+      </button>
+      <button data-tab="not-lobbying" class="tab-btn px-3 py-2 text-sm font-medium text-stone-500 hover:text-stone-900">
+        Not lobbying <span class="ml-1 text-[11px] bg-stone-100 text-stone-700 px-1.5 py-0.5 rounded-full">11</span>
+      </button>
+      <button data-tab="all" class="tab-btn px-3 py-2 text-sm font-medium text-stone-500 hover:text-stone-900">All</button>
+      <div class="ml-auto flex items-center gap-2 pb-2">
+        <div class="relative">
+          <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3a6 6 0 1 0 3.47 10.9l3.31 3.32a.75.75 0 1 0 1.06-1.06l-3.31-3.32A6 6 0 0 0 9 3Z" clip-rule="evenodd"/></svg>
+          <input class="pl-7 pr-3 py-1.5 text-sm bg-white border border-stone-200 rounded-md placeholder:text-stone-400 focus:outline-none focus:border-emerald-600 focus:ring-accent" placeholder="Filter meetings…" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Inbox + detail split -->
+    <div class="grid grid-cols-5 gap-4">
+      <!-- LIST -->
+      <div class="col-span-2 bg-white border border-stone-200 rounded-xl overflow-hidden">
+        <ul id="inbox" class="divide-y divide-stone-100"></ul>
+      </div>
+
+      <!-- DETAIL -->
+      <div class="col-span-3">
+        <div id="detail" class="bg-white border border-stone-200 rounded-xl overflow-hidden"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Curated gov domains (illustrative subset)
+    const GOV_DOMAINS = {
+      'canada.ca': { institution: 'Government of Canada (shared)', jurisdiction: 'federal' },
+      'gc.ca':     { institution: 'Government of Canada (generic)', jurisdiction: 'federal' },
+      'ec.gc.ca':  { institution: 'Environment and Climate Change Canada (ECCC)', jurisdiction: 'federal' },
+      'nrcan-rncan.gc.ca': { institution: 'Natural Resources Canada (NRCan)', jurisdiction: 'federal' },
+      'ised-isde.canada.ca': { institution: 'Innovation, Science and Economic Development (ISED)', jurisdiction: 'federal' },
+      'tbs-sct.gc.ca': { institution: 'Treasury Board of Canada Secretariat', jurisdiction: 'federal' },
+      'parl.gc.ca': { institution: 'House of Commons', jurisdiction: 'federal' },
+      'sen.parl.gc.ca': { institution: 'Senate of Canada', jurisdiction: 'federal' },
+      'fin.gc.ca': { institution: 'Department of Finance Canada', jurisdiction: 'federal' },
+      'cra-arc.gc.ca': { institution: 'Canada Revenue Agency', jurisdiction: 'federal' },
+    };
+
+    // Illustrative detected meetings
+    const MEETINGS = [
+      {
+        id: 'm1',
+        title: 'Briefing on Canadian carbon-removal policy framework',
+        date: 'Apr 14, 2026 · 2:30 PM',
+        duration: '45m',
+        source: 'Google Calendar · phil@deepskyclimate.com',
+        attendees: [
+          { name: 'Phil Campbell', email: 'phil@deepskyclimate.com', role: 'CEO, Deep Sky', internal: true },
+          { name: 'Sarah Chen', email: 'sarah.chen@nrcan-rncan.gc.ca', role: 'Deputy Minister, NRCan', resolved: true, dpoh: true, source: 'GEDS + ministerial appointments' },
+          { name: 'Marc Tremblay', email: 'marc.tremblay@ec.gc.ca', role: "Chief of Staff, Min. ECCC", resolved: true, dpoh: true, source: 'Ministerial exempt staff registry' },
+          { name: 'James Ortiz', email: 'james.ortiz@nrcan-rncan.gc.ca', role: 'Policy Advisor', resolved: true, dpoh: false, source: 'GEDS' },
+        ],
+        classification: 'lobbying',
+        confidence: 0.92,
+        reasons: [
+          { ok: true, text: 'Two DPOHs present (Deputy Minister, Chief of Staff)' },
+          { ok: true, text: 'Oral and arranged (calendar meeting, not ad-hoc)' },
+          { ok: true, text: 'In-scope subjects: climate, carbon removal, ITC policy' },
+        ],
+        status: 'pending',
+        subjects: ['Environment', 'Climate', 'Science and Technology'],
+      },
+      {
+        id: 'm2',
+        title: 'ECCC public consultation — DAC regulatory roadmap (webinar)',
+        date: 'Apr 11, 2026 · 1:00 PM',
+        duration: '90m',
+        source: 'Google Calendar · alex@deepskyclimate.com',
+        attendees: [
+          { name: 'Alex Petrin', email: 'alex@deepskyclimate.com', role: 'VP Policy, Deep Sky', internal: true },
+          { name: 'ECCC Consultation Desk', email: 'consultation@ec.gc.ca', role: 'Public consultation', resolved: true, dpoh: false, source: 'Domain registry' },
+          { name: '~200 public attendees', email: '', role: 'Open webinar', resolved: false, dpoh: false },
+        ],
+        classification: 'not-lobbying',
+        confidence: 0.88,
+        reasons: [
+          { ok: false, text: 'Open public consultation — not "arranged oral communication"', cite: 'Lobbying Act s. 5; OCL interpretation' },
+          { ok: false, text: 'No DPOH individually engaged' },
+          { ok: true, text: 'Still logged for internal audit trail' },
+        ],
+        status: 'auto-excluded',
+        subjects: [],
+      },
+      {
+        id: 'm3',
+        title: 'Coffee — Phil + MP Jane Doherty (Climate Caucus)',
+        date: 'Apr 18, 2026 · 8:30 AM',
+        duration: '30m',
+        source: 'Google Calendar · phil@deepskyclimate.com',
+        attendees: [
+          { name: 'Phil Campbell', email: 'phil@deepskyclimate.com', role: 'CEO, Deep Sky', internal: true },
+          { name: 'Jane Doherty', email: 'jane.doherty@parl.gc.ca', role: 'Member of Parliament', resolved: true, dpoh: true, source: 'Parliament of Canada directory' },
+        ],
+        classification: 'lobbying',
+        confidence: 0.95,
+        reasons: [
+          { ok: true, text: 'Member of Parliament — MPs are DPOHs under the Act' },
+          { ok: true, text: 'One-on-one, arranged, oral communication' },
+          { ok: true, text: 'Meeting title suggests climate/policy discussion' },
+        ],
+        status: 'pending',
+        subjects: ['Environment', 'Climate'],
+      },
+      {
+        id: 'm4',
+        title: 'ISED — Strategic Innovation Fund information session',
+        date: 'Apr 9, 2026 · 11:00 AM',
+        duration: '60m',
+        source: 'Microsoft 365 · alex@deepskyclimate.com',
+        attendees: [
+          { name: 'Alex Petrin', email: 'alex@deepskyclimate.com', role: 'VP Policy, Deep Sky', internal: true },
+          { name: 'SIF Program Team', email: 'sif-fis@ised-isde.canada.ca', role: 'Program delivery', resolved: true, dpoh: false, source: 'Domain registry' },
+        ],
+        classification: 'not-lobbying',
+        confidence: 0.82,
+        reasons: [
+          { ok: false, text: 'Routine program / funding Q&A — exempted from reporting under s. 4(2)(c)' },
+          { ok: false, text: 'No DPOH in attendance' },
+          { ok: true, text: 'Logged; not reportable. Tell us if this should change.' },
+        ],
+        status: 'auto-excluded',
+        subjects: [],
+      },
+      {
+        id: 'm5',
+        title: 'Intro call — "Pat" (NRCan)',
+        date: 'Apr 19, 2026 · 3:00 PM',
+        duration: '30m',
+        source: 'Google Calendar · laurence@deepskyclimate.com',
+        attendees: [
+          { name: 'Laurence Côté', email: 'laurence@deepskyclimate.com', role: 'Comms, Deep Sky', internal: true },
+          { name: 'Pat (unresolved)', email: 'pat.mcdonald@nrcan-rncan.gc.ca', role: 'Unknown', resolved: false, dpoh: null, source: null },
+        ],
+        classification: 'needs-info',
+        confidence: 0.51,
+        reasons: [
+          { ok: null, text: 'Attendee not yet resolved to a specific role' },
+          { ok: null, text: 'We pinged GEDS; no exact match. Possibly a contractor or recent hire.' },
+          { ok: true, text: 'NRCan domain confirmed — jurisdiction federal' },
+        ],
+        status: 'pending',
+        subjects: [],
+      },
+      {
+        id: 'm6',
+        title: 'Parl. Sec. Lin Zhou — follow-up on DAC ITC amendment',
+        date: 'Apr 16, 2026 · 9:00 AM',
+        duration: '20m',
+        source: 'Google Calendar · phil@deepskyclimate.com',
+        attendees: [
+          { name: 'Phil Campbell', email: 'phil@deepskyclimate.com', role: 'CEO, Deep Sky', internal: true },
+          { name: 'Lin Zhou', email: 'lin.zhou@parl.gc.ca', role: 'Parliamentary Secretary to the Minister of Finance', resolved: true, dpoh: true, source: 'Ministerial appointments' },
+        ],
+        classification: 'lobbying',
+        confidence: 0.94,
+        reasons: [
+          { ok: true, text: 'Parliamentary Secretary — DPOH under the Act' },
+          { ok: true, text: 'Arranged call, subject: ITC amendment (Taxation and Finance)' },
+        ],
+        status: 'pending',
+        subjects: ['Taxation and Finance', 'Environment'],
+      },
+    ];
+
+    const STATUS_META = {
+      'lobbying':      { label: 'Likely lobbying',   color: 'emerald', icon: '●' },
+      'not-lobbying':  { label: 'Not lobbying',      color: 'stone',   icon: '○' },
+      'needs-info':    { label: 'Needs your input',  color: 'amber',   icon: '?' },
+    };
+
+    function domainOf(email) {
+      if (!email || !email.includes('@')) return null;
+      return email.split('@')[1].toLowerCase();
+    }
+    function matchGov(email) {
+      const d = domainOf(email); if (!d) return null;
+      if (GOV_DOMAINS[d]) return GOV_DOMAINS[d];
+      for (const key of Object.keys(GOV_DOMAINS)) if (d.endsWith('.' + key) || d === key) return GOV_DOMAINS[key];
+      return null;
+    }
+
+    let currentId = MEETINGS[0].id;
+
+    function renderInbox() {
+      const ul = document.getElementById('inbox');
+      ul.innerHTML = '';
+      MEETINGS.forEach(m => {
+        const c = STATUS_META[m.classification];
+        const govAttendees = m.attendees.filter(a => matchGov(a.email));
+        const dpohs = govAttendees.filter(a => a.dpoh === true).length;
+
+        const li = document.createElement('li');
+        li.className = `p-4 cursor-pointer hover:bg-stone-50 ${currentId === m.id ? 'bg-stone-50' : ''} relative`;
+        li.innerHTML = `
+          ${currentId === m.id ? '<span class="absolute left-0 top-0 bottom-0 w-0.5 bg-emerald-600"></span>' : ''}
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-[10px] uppercase tracking-wide font-semibold text-${c.color}-800 bg-${c.color}-50 border border-${c.color}-200 px-1.5 py-0.5 rounded">${c.label}</span>
+                ${m.confidence ? `<span class="text-[10px] text-stone-500">· ${(m.confidence*100)|0}% conf.</span>` : ''}
+              </div>
+              <div class="text-sm font-medium text-stone-900 truncate">${m.title}</div>
+              <div class="text-xs text-stone-500 mt-0.5">${m.date} · ${m.duration}</div>
+              <div class="flex flex-wrap gap-1 mt-2">
+                ${govAttendees.slice(0,3).map(a => `
+                  <span class="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border ${a.dpoh ? 'bg-amber-50 text-amber-900 border-amber-200' : a.dpoh === false ? 'bg-stone-50 text-stone-700 border-stone-200' : 'bg-stone-50 text-stone-500 border-stone-200 border-dashed'}">
+                    ${a.dpoh ? '★' : a.dpoh === false ? '·' : '?'} ${a.name.split(' ')[0]} ${a.dpoh ? '(DPOH)' : ''}
+                  </span>`).join('')}
+                ${govAttendees.length > 3 ? `<span class="text-[11px] text-stone-500">+${govAttendees.length-3}</span>` : ''}
+              </div>
+            </div>
+            ${m.status === 'pending' ? '<div class="w-2 h-2 rounded-full bg-amber-500 mt-1.5" title="Awaiting your review"></div>' : ''}
+          </div>
+        `;
+        li.addEventListener('click', () => { currentId = m.id; render(); });
+        ul.appendChild(li);
+      });
+    }
+
+    function renderDetail() {
+      const m = MEETINGS.find(x => x.id === currentId);
+      if (!m) return;
+      const c = STATUS_META[m.classification];
+      const el = document.getElementById('detail');
+
+      el.innerHTML = `
+        <div class="p-5 border-b border-stone-100">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-[10px] uppercase tracking-wide font-semibold text-${c.color}-800 bg-${c.color}-50 border border-${c.color}-200 px-1.5 py-0.5 rounded">${c.label}</span>
+                <span class="text-[10px] text-stone-500">· auto-classified · ${(m.confidence*100)|0}% confidence</span>
+              </div>
+              <h2 class="text-lg font-semibold text-stone-900">${m.title}</h2>
+              <div class="text-sm text-stone-600 mt-1">${m.date} · ${m.duration} · <span class="text-stone-500">${m.source}</span></div>
+            </div>
+            <button class="text-stone-400 hover:text-stone-700" aria-label="Open source event">↗</button>
+          </div>
+        </div>
+
+        <!-- Attendees -->
+        <div class="p-5 border-b border-stone-100">
+          <div class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-3">Attendees</div>
+          <div class="space-y-2">
+            ${m.attendees.map(a => {
+              const gov = matchGov(a.email);
+              const badge = a.dpoh === true
+                ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-200 rounded">DPOH</span>'
+                : a.dpoh === false
+                  ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 bg-stone-100 text-stone-700 border border-stone-200 rounded">Public official</span>'
+                  : a.internal
+                    ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded">Internal</span>'
+                    : '<span class="text-[10px] font-semibold px-1.5 py-0.5 bg-stone-100 text-stone-500 border border-stone-200 rounded border-dashed">Unresolved</span>';
+              const govTag = gov ? `<span class="text-[10px] text-stone-500 ml-1">· ${gov.institution}</span>` : '';
+              return `
+                <div class="flex items-start justify-between p-3 rounded-lg border ${a.dpoh === true ? 'border-amber-200 bg-amber-50/50' : a.internal ? 'border-emerald-200 bg-emerald-50/40' : 'border-stone-200'}">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-medium text-stone-900">${a.name}</span>
+                      ${badge}
+                    </div>
+                    <div class="text-xs text-stone-600 mt-0.5">${a.role}${govTag}</div>
+                    ${a.email ? `<div class="text-xs text-stone-400 font-mono mt-0.5">${a.email}</div>` : ''}
+                    ${a.source ? `<div class="text-[11px] text-stone-500 mt-1">Resolved via ${a.source}</div>` : ''}
+                  </div>
+                  ${!a.resolved && !a.internal ? '<button class="text-xs text-emerald-800 hover:underline whitespace-nowrap">Resolve →</button>' : ''}
+                </div>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Classification reasoning -->
+        <div class="p-5 border-b border-stone-100 bg-stone-50/40">
+          <div class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-3">Why we classified this as "${c.label}"</div>
+          <ul class="space-y-2">
+            ${m.reasons.map(r => `
+              <li class="flex items-start gap-2 text-sm">
+                <span class="${r.ok === true ? 'text-emerald-700' : r.ok === false ? 'text-stone-500' : 'text-amber-600'} mt-0.5 w-4 text-center">
+                  ${r.ok === true ? '✓' : r.ok === false ? '—' : '?'}
+                </span>
+                <span class="text-stone-700">
+                  ${r.text}
+                  ${r.cite ? `<span class="text-xs text-stone-500 ml-1">· ${r.cite}</span>` : ''}
+                </span>
+              </li>`).join('')}
+          </ul>
+          ${m.classification === 'not-lobbying' ? `
+            <div class="mt-3 text-xs text-stone-500 bg-white border border-stone-200 rounded-lg p-3">
+              <span class="font-medium text-stone-700">Why this matters:</span> Not every meeting with a <code class="text-[11px] bg-stone-100 px-1 rounded">@*.gc.ca</code> attendee is reportable. Over-reporting bloats your record and misrepresents your lobbying activity. We track it internally for your audit trail but exclude it from your MCR queue and from the 8-hour threshold clock.
+            </div>` : ''}
+        </div>
+
+        <!-- Actions -->
+        <div class="p-5 flex items-center justify-between gap-3">
+          <div class="text-xs text-stone-500">
+            ${m.subjects.length ? `Subjects: <span class="text-stone-800">${m.subjects.join(', ')}</span>` : 'No subjects set yet'}
+          </div>
+          <div class="flex items-center gap-2">
+            ${m.classification !== 'lobbying' ? '<button class="text-sm px-3 py-2 rounded-md border border-stone-200 hover:bg-stone-50">Mark as lobbying</button>' : ''}
+            ${m.classification !== 'not-lobbying' ? '<button class="text-sm px-3 py-2 rounded-md border border-stone-200 hover:bg-stone-50">Not lobbying</button>' : ''}
+            ${m.classification === 'lobbying' ? '<button class="text-sm px-4 py-2 rounded-md bg-emerald-700 text-white font-medium hover:bg-emerald-800">Confirm & draft MCR →</button>' : ''}
+            ${m.classification === 'needs-info' ? '<button class="text-sm px-4 py-2 rounded-md bg-amber-600 text-white font-medium hover:bg-amber-700">Resolve attendees</button>' : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function render() { renderInbox(); renderDetail(); }
+    render();
+  </script>
+</body>
+</html>
