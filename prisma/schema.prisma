@@ -112,7 +112,7 @@ model RawCalendarEvent {
 
 model InstitutionRegistry {
   id           String   @id @default(cuid())
-  name         String
+  name         String   @unique
   acronym      String?
   jurisdiction String   // federal | provincial | municipal
   domains      String[] // email domains that map to this institution
