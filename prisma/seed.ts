@@ -49,7 +49,7 @@ type InstitutionSeed = {
 };
 
 const FEDERAL_INSTITUTIONS: InstitutionSeed[] = [
-  // ── 1. Climate & clean-tech — highest priority for Deep Sky ─────────────────
+  // ── 1. Climate & clean-tech — highest priority for Deep Sky (7) ─────────────
 
   {
     name: "Environment and Climate Change Canada",
@@ -101,7 +101,7 @@ const FEDERAL_INSTITUTIONS: InstitutionSeed[] = [
     isDpohSource: true,
   },
 
-  // ── 2. Central agencies — relevant for any federal registrant ────────────────
+  // ── 2. Central agencies — relevant for any federal registrant (4) ───────────
 
   {
     name: "Finance Canada",
@@ -131,7 +131,7 @@ const FEDERAL_INSTITUTIONS: InstitutionSeed[] = [
     isDpohSource: true,
   },
 
-  // ── 3. Other line departments ────────────────────────────────────────────────
+  // ── 3. Other line departments (15) ───────────────────────────────────────────
 
   {
     name: "Global Affairs Canada",
@@ -229,7 +229,7 @@ const FEDERAL_INSTITUTIONS: InstitutionSeed[] = [
     isDpohSource: true,
   },
 
-  // ── 4. Crown corporations (relevant to deep-tech / climate funding) ──────────
+  // ── 4. Crown corporations (relevant to deep-tech / climate funding) (2) ──────
 
   {
     name: "Export Development Canada",
@@ -245,7 +245,7 @@ const FEDERAL_INSTITUTIONS: InstitutionSeed[] = [
     isDpohSource: false,
   },
 
-  // ── 5. Parliament — MPs and senators are DPOHs by statute ───────────────────
+  // ── 5. Parliament — MPs and senators are DPOHs by statute (2) ──────────────
 
   {
     name: "House of Commons",
@@ -262,7 +262,7 @@ const FEDERAL_INSTITUTIONS: InstitutionSeed[] = [
     isDpohSource: true,
   },
 
-  // ── 6. Oversight ─────────────────────────────────────────────────────────────
+  // ── 6. Oversight (1) ─────────────────────────────────────────────────────────
 
   {
     name: "Office of the Commissioner of Lobbying",
