@@ -270,6 +270,34 @@ const FEDERAL_INSTITUTIONS: InstitutionSeed[] = [
     domains: ["ocl-cal.gc.ca"],
     isDpohSource: true,
   },
+
+  // ── 7. Catch-all fallback — LOW-CONFIDENCE ONLY (1) ─────────────────────────
+  //
+  // PURPOSE: canada.ca is a shared domain used by every federal department.
+  // Matching it tells Stage 2 "this email touches the federal government" but
+  // cannot identify which institution, and MUST NOT be used as a basis for
+  // classifying a meeting as lobbying on its own.
+  //
+  // RESOLUTION REQUIREMENT (non-negotiable):
+  //   A canada.ca match emits a "needs-resolution" signal (confidence: low).
+  //   The meeting CANNOT progress to Stage 3 (identity/role resolution) until
+  //   at least ONE secondary signal confirms the institution:
+  //     (a) Calendar organizer domain resolves to a specific institution, OR
+  //     (b) Attendee name matches a GEDS or Parliament directory entry, OR
+  //     (c) Meeting title or body (when opt-in) contains an explicit institution name.
+  //   Without a secondary signal the meeting stays in "needs-resolution" and
+  //   surfaces in the inbox as "Government contact — institution unknown."
+  //
+  // isDpohSource: false — we cannot determine DPOH status without knowing the
+  //   institution. A DPOH determination requires the specific institution entry.
+  {
+    name: "Government of Canada (unresolved)",
+    acronym: "GOC",
+    // canada.ca is the shared federal web/email domain. Matching this domain
+    // alone is insufficient for institution attribution or DPOH determination.
+    domains: ["canada.ca"],
+    isDpohSource: false,
+  },
 ];
 
 async function main() {

@@ -31,6 +31,24 @@
   3. GCWCC / TBS-published domain lists
   4. Manual curation for ministers' office, Crown corps, and judicial domains
 - **Output per attendee:** `{ jurisdiction: 'federal'|'provincial'|'municipal', institution_id, confidence, source }`.
+
+#### `canada.ca` catch-all rule (non-negotiable)
+
+The registry contains a special entry `"Government of Canada (unresolved)"` (`GOC`, `isDpohSource: false`) that maps the shared `canada.ca` domain. This entry exists so that any federal employee whose email has migrated to `@canada.ca` (rather than a department-specific `@dept.gc.ca` domain) is still recognised as a federal contact.
+
+**A `canada.ca` match emits a `needs-resolution` signal at LOW confidence. It MUST NOT be used alone as a basis for:**
+- attributing a meeting to a specific institution,
+- determining DPOH status, or
+- classifying a meeting as lobbying.
+
+**Resolution requirement:** the meeting cannot progress to Stage 3 (identity/role resolution) until at least ONE secondary signal confirms the institution:
+
+1. The calendar organizer's email domain resolves to a specific institution in the registry, OR
+2. The attendee's name matches a GEDS or Parliament directory entry (Stage 3 sources), OR
+3. The meeting title or body (when body opt-in is enabled) contains an explicit institution name that resolves to a registry entry.
+
+Without a confirmed secondary signal, the meeting remains in `needs-resolution` and surfaces in the inbox as **"Government contact — institution unknown."** It is excluded from the MCR queue and does not contribute to the hours-threshold clock until resolved.
+
 - **Fallback signals** (when email is e.g. `@gmail.com` but calendar was accepted from a gc.ca):
   - Check calendar metadata for the responding domain
   - Parse organizer's domain
