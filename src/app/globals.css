@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@theme {
+  /* Inter font — match prototypes */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Emerald-700 accent + stone neutral palette per CLAUDE.md */
+  --color-accent: var(--color-emerald-700);
+}
