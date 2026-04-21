@@ -74,6 +74,30 @@ prisma/
 - **Per-tenant isolation always.** No query without an explicit `tenantId` scope. RLS backs this up.
 - **No PII in logs.** Attendee names and emails are sensitive; log IDs, not content.
 
+## Data operations
+
+Neon free tier is 0.5 GB with a short PITR window. Every import or seed script must be idempotent — re-running it must land the DB at the same size, not accumulate.
+
+**Idempotent import/seed pattern (required):**
+
+1. At start, log `[Step 0] Current DB size: X MB` via `pg_database_size(current_database())`.
+2. Wrap the whole run in a single `prisma.$transaction(async (tx) => { ... }, { timeout: 300_000, maxWait: 10_000 })`.
+3. Inside the transaction, TRUNCATE the target tables before inserts: `TRUNCATE TABLE "<table_a>", "<table_b>" RESTART IDENTITY CASCADE;`.
+4. Wrap in `try/finally` so `[Final] DB size: X MB` always logs, even on failure.
+
+**Migration workflow:**
+
+- Hand-edit `prisma/schema.prisma`, then `npx prisma migrate dev --name <desc>` in local dev to generate SQL + apply.
+- Production / CI runs `npx prisma migrate deploy` only — never `migrate dev`.
+- `DATABASE_URL` points at the pooled Neon endpoint (`-pooler` host). `DIRECT_URL` points at the non-pooled endpoint; Prisma uses it for migrations.
+- Never run raw SQL against prod without a migration file committed to the repo first.
+
+**OCL public data (read-only reference tables):**
+
+- `ocl_public_registration` holds the **full historical** registration set (~170k rows) — needed for cross-referencing older filings.
+- `ocl_public_communication_report` is **filtered to 2019+** (~215k rows) — pre-2019 MCRs are skipped, they're not useful for our detection window.
+- Full import lands at ~187 MB. Budget accordingly when adding tables.
+
 ## Definition of Done
 
 A feature ships when:
@@ -87,11 +111,11 @@ A feature ships when:
 
 Work in this order. Each is roughly a 2–4 hour unit. Ship one at a time; commit each.
 
-1. **Bootstrap Next.js.** `npx create-next-app@latest` in this directory with App Router, TS, Tailwind, ESLint. Set up Prettier. First commit.
-2. **Add Prisma + Neon.** Apply `prisma/schema.prisma`. Create a Neon project, set `DATABASE_URL`, run first migration. Prove connectivity with a trivial query on `Tenant`.
-3. **Seed institution + gov-domain registry.** Write a seed script with the top ~30 federal institutions and their email domains. This is the foundation of detection.
-4. **Import OCL open data.** Download registrations + MCRs CSVs from https://open.canada.ca. Load into a read-only `ocl_public_registration` table. Build a bare-bones `/registry-search` page. Roadmap milestone: "search the federal registry faster than the OCL's own site."
-5. **Clerk auth + tenant scaffolding.** Wire Clerk. Every user belongs to a tenant. Tenant guard every query.
+1. ✅ **Bootstrap Next.js.** `npx create-next-app@latest` in this directory with App Router, TS, Tailwind, ESLint. Set up Prettier.
+2. ✅ **Add Prisma + Neon.** Apply `prisma/schema.prisma`. Neon project provisioned; `DATABASE_URL` + `DIRECT_URL` set; migrations applied.
+3. ✅ **Seed institution + gov-domain registry.** Top ~30 federal institutions + email domains seeded. Foundation of detection.
+4. ✅ **Import OCL open data.** Registrations + comm reports loaded from open.canada.ca; idempotent import script with TRUNCATE-in-transaction and DB-size logging (see Data operations). `/registry-search` page live.
+5. ⏳ **Clerk auth + tenant scaffolding.** Wire Clerk. Every user belongs to a tenant. Tenant guard every query.
 6. **Update CLAUDE.md** with any decisions made along the way.
 
 Only after Phase 0 ships:
