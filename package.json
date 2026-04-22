@@ -21,6 +21,7 @@
     "db:studio": "dotenv -e .env.local -- prisma studio",
     "db:seed": "prisma db seed",
     "ocl:import": "dotenv -e .env.local -- tsx scripts/import-ocl.ts",
+    "tenants:backfill": "dotenv -e .env.local -- tsx scripts/backfill-tenants.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -28,6 +29,7 @@
     "seed": "dotenv -e .env.local -- tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.2.3",
     "@prisma/client": "^6.19.3",
     "iconv-lite": "^0.7.2",
     "next": "^15.3.1",
@@ -35,7 +37,9 @@
     "prisma": "^6.19.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "unzipper": "^0.12.3"
+    "svix": "^1.91.1",
+    "unzipper": "^0.12.3",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.5",

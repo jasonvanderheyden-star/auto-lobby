@@ -53,12 +53,12 @@ export default async function RegistrySearchPage({ searchParams }: PageProps) {
               <a className="rounded-md px-3 py-1.5 text-stone-600 hover:bg-stone-100" href="#">
                 Dashboard
               </a>
-              <a
+              <Link
                 className="rounded-md bg-stone-100 px-3 py-1.5 font-medium text-stone-900"
                 href="/registry-search"
               >
                 Registry
-              </a>
+              </Link>
             </nav>
           </div>
         </div>

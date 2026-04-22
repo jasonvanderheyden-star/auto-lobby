@@ -19,6 +19,7 @@ datasource db {
 
 model Tenant {
   id             String   @id @default(cuid())
+  clerkOrgId     String?  @unique // Clerk Organization ID — stable join key for webhook upserts
   name           String
   industry       String?
   jurisdiction   String   @default("federal") // federal | provincial | municipal | multi
