@@ -17,6 +17,11 @@ An agent runs continuously on the user's calendar, detects meetings with Canadia
 - `prototypes/Meeting-Inbox.html` — passive activity log (demoted from primary UX)
 - `prisma/schema.prisma` — starter data model, multi-tenant, event-sourced audit trail
 
+Parked ideas (don't build, but check before making structural decisions that might foreclose them):
+
+- `docs/Naming-Parked.md` — product name decision (resume after Phase 0 ships green)
+- `docs/Gov-Platform-Parked.md` — potential second product for commissioner's offices (resume after ≥3 paying federal customers)
+
 Build React components that match the prototypes visually. Inter font, emerald-700 accent, stone neutral palette, generous whitespace.
 
 ## Non-negotiable constraints
