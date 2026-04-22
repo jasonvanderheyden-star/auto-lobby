@@ -98,6 +98,16 @@ Neon free tier is 0.5 GB with a short PITR window. Every import or seed script m
 - `ocl_public_communication_report` is **filtered to 2019+** (~215k rows) — pre-2019 MCRs are skipped, they're not useful for our detection window.
 - Full import lands at ~187 MB. Budget accordingly when adding tables.
 
+## Auth + webhooks
+
+**Clerk Organizations map 1:1 to Tenant rows.** `clerkOrgId` on `Tenant` is the stable join key. The webhook handler at `/api/webhooks/clerk` upserts on `organization.created` and `organization.updated`. Signature verification uses svix with `CLERK_WEBHOOK_SECRET`.
+
+**Gotchas learned in dev:**
+
+- **Webhook URLs must include the full path.** Register the Clerk webhook endpoint as `https://<tunnel>/api/webhooks/clerk` — not just the domain root. If only the domain is registered, Clerk POSTs to `/`, gets a 200 from the landing page, and marks the delivery "Succeeded" in its UI even though the handler never ran. Always verify the full URL after registration.
+- **ngrok free URLs change every session.** Re-register the webhook in the Clerk dashboard each dev session, or pay for a reserved ngrok domain. Alternatively use Clerk's own dev tunnel: `npx @clerk/agent tunnel 3000`.
+- **Clerk webhooks don't replay past events.** If orgs are created before the webhook endpoint is reachable, run `npm run tenants:backfill` to sync them (see `scripts/backfill-tenants.ts`).
+
 ## Definition of Done
 
 A feature ships when:
@@ -115,8 +125,13 @@ Work in this order. Each is roughly a 2–4 hour unit. Ship one at a time; commi
 2. ✅ **Add Prisma + Neon.** Apply `prisma/schema.prisma`. Neon project provisioned; `DATABASE_URL` + `DIRECT_URL` set; migrations applied.
 3. ✅ **Seed institution + gov-domain registry.** Top ~30 federal institutions + email domains seeded. Foundation of detection.
 4. ✅ **Import OCL open data.** Registrations + comm reports loaded from open.canada.ca; idempotent import script with TRUNCATE-in-transaction and DB-size logging (see Data operations). `/registry-search` page live.
-5. ⏳ **Clerk auth + tenant scaffolding.** Wire Clerk. Every user belongs to a tenant. Tenant guard every query.
-6. **Update CLAUDE.md** with any decisions made along the way.
+5. ✅ **Clerk auth + tenant scaffolding.** Clerk provider + middleware wired. Webhook handler at `/api/webhooks/clerk` upserts Tenant rows on `organization.created/updated`. Tenant context helper (`getTenantContext`, `withTenant`, `tenantScopedPrisma`) in `src/server/tenant/context.ts`. Dashboard proves end-to-end sync.
+6. ✅ **Update CLAUDE.md** with any decisions made along the way.
+
+**Phase 0 is complete.**
+
+Phase 1 (not yet started):
+7. **Google Calendar OAuth + ingestion.** Connect a Google Calendar, ingest events, feed the detection pipeline.
 
 Only after Phase 0 ships:
 - DPOH resolution service (GEDS + Parliament + ministerial exempt staff)
