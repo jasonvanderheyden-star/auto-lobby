@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { commsHaveBlankSubjects } from "./comm-utils";
 
 interface PageProps {
   params: Promise<{ registrationNum: string }>;
@@ -146,6 +147,14 @@ export default async function RegistrationDetailPage({ params }: PageProps) {
               </span>
             )}
           </h2>
+          {commsHaveBlankSubjects(comms) && (
+            <p className="mt-1 mb-4 text-xs text-stone-500">
+              Subject matters for recent months may show as —. OCL publishes
+              subject-matter data on a slower cadence than communication
+              metadata (~18-month lag). See docs/Detection-Pipeline.md §7 for
+              how the classifier handles this.
+            </p>
+          )}
 
           {comms.length === 0 ? (
             <p className="text-sm text-stone-400">No communication reports on file for this client.</p>
@@ -176,21 +185,25 @@ export default async function RegistrationDetailPage({ params }: PageProps) {
                         {c.institution}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {c.subjects.slice(0, 4).map((s) => (
-                            <span
-                              key={s}
-                              className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] text-stone-500"
-                            >
-                              {s}
-                            </span>
-                          ))}
-                          {c.subjects.length > 4 && (
-                            <span className="text-[10px] text-stone-400">
-                              +{c.subjects.length - 4}
-                            </span>
-                          )}
-                        </div>
+                        {c.subjects.length === 0 ? (
+                          <span className="text-[10px] text-stone-400">—</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {c.subjects.slice(0, 4).map((s) => (
+                              <span
+                                key={s}
+                                className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] text-stone-500"
+                              >
+                                {s}
+                              </span>
+                            ))}
+                            {c.subjects.length > 4 && (
+                              <span className="text-[10px] text-stone-400">
+                                +{c.subjects.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}

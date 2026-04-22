@@ -129,6 +129,16 @@ The classifier's verdict is only step one. For any meeting classified as lobbyin
 
 **Provenance-per-field.** Every pre-filled value carries a source tag (`geds`, `exempt-staff-registry`, `past-filings`, `org-profile`, `calendar`, `llm-draft`) that the UI surfaces as a small coloured dot. The user can always see *why* a field has its value.
 
+#### OCL subject-matter lag and multi-year issue persistence
+
+OCL's `Communication_SubjectMattersExport.csv` lags `Communication_PrimaryExport.csv` by ~18 months. For recent comms (trailing 1.5 years), OCL subjects are not available in the open data.
+
+**Implication for classifier + pre-fill:** a registrant's historical subjects (2019–mid-2024) are a strong prior for their current subject mix, because most government-affairs issues unfold over multi-year policy arcs — a registrant lobbying on carbon pricing in 2023 is overwhelmingly still lobbying on carbon pricing in 2026.
+
+**Design rule:** when OCL subjects are unavailable for a recent comm, pre-fill the MCR with the registrant's most frequent subjects from their 2019–mid-2024 history, tagged with provenance `"inferred from prior filings — please review."` Never assert the inference as fact; the CEO certification step must see the inference and can edit before signing. The user's own past MCRs (drafted inside Auto Lobby) always take precedence over OCL-derived inferences.
+
+**Not a rule to mechanically apply:** sometimes subjects do change — new programs launch, regulations shift, companies pivot. Treat historical subjects as a soft signal, not a deterministic mapping.
+
 ### Stage 8 — Monthly certification gate
 This is the sole human-in-the-loop step. Once per month (by the 15th), the CEO/senior officer reviews the pre-drafted batch and certifies.
 
