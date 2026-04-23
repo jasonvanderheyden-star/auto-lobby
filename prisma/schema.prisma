@@ -23,13 +23,14 @@ model Tenant {
   name           String
   industry       String?
   jurisdiction   String   @default("federal") // federal | provincial | municipal | multi
-  registrationId String?  // OCL registration ID if active
+  registrationId String? // OCL registration ID if active
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   orgProfile          OrgProfile?
   employees           Employee[]
   calendarConnections CalendarConnection[]
+  rawCalendarEvents   RawCalendarEvent[]
   detectedMeetings    DetectedMeeting[]
   hoursLedger         HoursLedgerEntry[]
   auditEvents         AuditEvent[]
@@ -45,23 +46,21 @@ model OrgProfile {
   keyInstitutions    String[] // institution IDs routinely engaged
   prepTimeMultiplier Float    @default(0) // 0 = don't auto-count; e.g. 0.25 = 25% prep
   calendarBodyOptIn  Boolean  @default(false)
-  notesConnectors    Json?    // { granola: true, otter: false, zoomAi: true, ... }
-  filingVoice        String?  // learned sample of this org's MCR description style
+  notesConnectors    Json? // { granola: true, otter: false, zoomAi: true, ... }
+  filingVoice        String? // learned sample of this org's MCR description style
   updatedAt          DateTime @updatedAt
 }
 
 model Employee {
-  id           String  @id @default(cuid())
+  id           String   @id @default(cuid())
   tenantId     String
-  tenant       Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name         String
   email        String
   role         String?
-  isLobbyist   Boolean @default(true)  // named on registration
-  isRegistrant Boolean @default(false) // senior officer who certifies
+  isLobbyist   Boolean  @default(true) // named on registration
+  isRegistrant Boolean  @default(false) // senior officer who certifies
   createdAt    DateTime @default(now())
-
-  calendarConnections CalendarConnection[]
 
   @@unique([tenantId, email])
 }
@@ -70,41 +69,95 @@ model Employee {
 // Calendar ingestion
 // ============================================================
 
+enum CalendarProvider {
+  google
+  microsoft365
+}
+
+enum CalendarConnectionStatus {
+  active
+  disconnected
+  token_refresh_failed
+}
+
 model CalendarConnection {
-  id                String   @id @default(cuid())
-  tenantId          String
-  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employeeId        String
-  employee          Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  provider          String   // google | microsoft | icloud | exchange | caldav
-  providerAccountId String
-  bodyOptIn         Boolean  @default(false)
-  lastSyncAt        DateTime?
-  createdAt         DateTime @default(now())
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  rawEvents RawCalendarEvent[]
+  /// Clerk userId of the person who connected this calendar.
+  connectedByUserId String
 
-  @@unique([provider, providerAccountId])
+  provider          CalendarProvider @default(google)
+  /// Stable provider-side account identifier (Google 'sub' claim). Immutable per account.
+  externalAccountId String
+  /// Email address of the connected calendar owner — display only, not a join key.
+  email             String
+
+  /// Base64 of (iv ‖ authTag ‖ ciphertext) from AES-256-GCM. See src/server/crypto/tokens.ts.
+  accessTokenEncrypted  String
+  refreshTokenEncrypted String
+  accessTokenExpiresAt  DateTime
+  /// Scopes granted by the user (may be a subset of requested).
+  scopes                String[]
+
+  status       CalendarConnectionStatus @default(active)
+  /// Short machine-readable reason when status != active.
+  statusReason String?
+
+  /// Google syncToken for incremental fetch. Null until first sync completes.
+  syncToken    String?
+  lastSyncedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events RawCalendarEvent[]
+
+  @@unique([tenantId, provider, externalAccountId])
+  @@index([tenantId])
+  @@index([status])
 }
 
 model RawCalendarEvent {
-  id             String   @id @default(cuid())
-  connectionId   String
-  connection     CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  externalId     String
-  title          String
-  startAt        DateTime
-  endAt          DateTime
+  id           String             @id @default(cuid())
+  tenantId     String
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  connectionId String
+  connection   CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  /// Provider's event ID — stable per calendar.
+  externalId String
+  /// iCalendar UID — stable across calendars for the same meeting. Used to dedupe when multiple attendees' calendars are connected.
+  icalUID    String?
+
+  title          String?
+  startsAt       DateTime?
+  endsAt         DateTime?
   organizerEmail String?
-  attendees      Json     // [{ name, email, responseStatus }]
-  body           String?  // only populated when bodyOptIn = true
+  /// [{ email, displayName, responseStatus, organizer, optional }]
+  attendees      Json
   location       String?
-  fetchedAt      DateTime @default(now())
+  /// "default" | "public" | "private" | "confidential"
+  visibility     String?
+  /// "confirmed" | "tentative" | "cancelled"
+  eventStatus    String?
+
+  /// Whether the description field was ingested. Default off per CLAUDE.md; opt-in per tenant.
+  descriptionIncluded Boolean @default(false)
+  description         String?
+
+  /// Full provider response for audit / replay.
+  rawPayload Json
+  etag       String?
+
+  ingestedAt DateTime @default(now())
 
   detectedMeeting DetectedMeeting?
 
   @@unique([connectionId, externalId])
-  @@index([startAt])
+  @@index([tenantId, startsAt])
+  @@index([connectionId])
 }
 
 // ============================================================
@@ -115,7 +168,7 @@ model InstitutionRegistry {
   id           String   @id @default(cuid())
   name         String   @unique
   acronym      String?
-  jurisdiction String   // federal | provincial | municipal
+  jurisdiction String // federal | provincial | municipal
   domains      String[] // email domains that map to this institution
   isDpohSource Boolean  @default(false)
   createdAt    DateTime @default(now())
@@ -127,20 +180,20 @@ model InstitutionRegistry {
 }
 
 model PublicOfficial {
-  id              String   @id @default(cuid())
-  name            String
-  email           String?
-  role            String
-  institutionId   String
-  institution     InstitutionRegistry @relation(fields: [institutionId], references: [id])
-  isDpoh          Boolean
-  dpohBasis       String?  // role | position-designation | office-designation
-  ruleRef         String?  // e.g. "Lobbying Act s. 2(1) 'DPOH' (c)(i)"
-  resolvedFrom    String   // geds | parl | exempt-staff | manual
-  confidence      Float
-  effectiveFrom   DateTime?
-  effectiveUntil  DateTime?
-  createdAt       DateTime @default(now())
+  id             String              @id @default(cuid())
+  name           String
+  email          String?
+  role           String
+  institutionId  String
+  institution    InstitutionRegistry @relation(fields: [institutionId], references: [id])
+  isDpoh         Boolean
+  dpohBasis      String? // role | position-designation | office-designation
+  ruleRef        String? // e.g. "Lobbying Act s. 2(1) 'DPOH' (c)(i)"
+  resolvedFrom   String // geds | parl | exempt-staff | manual
+  confidence     Float
+  effectiveFrom  DateTime?
+  effectiveUntil DateTime?
+  createdAt      DateTime            @default(now())
 
   @@index([email])
   @@index([institutionId])
@@ -151,22 +204,22 @@ model PublicOfficial {
 // ============================================================
 
 model DetectedMeeting {
-  id                       String   @id @default(cuid())
+  id                       String           @id @default(cuid())
   tenantId                 String
-  tenant                   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  rawEventId               String   @unique
+  tenant                   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rawEventId               String           @unique
   rawEvent                 RawCalendarEvent @relation(fields: [rawEventId], references: [id])
   title                    String
   startAt                  DateTime
   endAt                    DateTime
   employeeEmail            String
   institutionId            String?
-  hadDpoh                  Boolean  @default(false)
-  classification           String   // lobbying | not-lobbying | needs-info
+  hadDpoh                  Boolean          @default(false)
+  classification           String // lobbying | not-lobbying | needs-info
   classificationConfidence Float
-  status                   String   @default("auto-drafted") // auto-drafted | ceo-certified | submitted | excluded | needs-info
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  status                   String           @default("auto-drafted") // auto-drafted | ceo-certified | submitted | excluded | needs-info
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
 
   attendees   MeetingAttendee[]
   reasons     ClassificationReason[]
@@ -178,13 +231,13 @@ model DetectedMeeting {
 }
 
 model MeetingAttendee {
-  id                 String   @id @default(cuid())
+  id                 String          @id @default(cuid())
   meetingId          String
   meeting            DetectedMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   name               String
   email              String
-  resolvedOfficialId String?  // FK to PublicOfficial when resolved
-  isInternal         Boolean  @default(false)
+  resolvedOfficialId String? // FK to PublicOfficial when resolved
+  isInternal         Boolean         @default(false)
   isDpoh             Boolean?
 
   @@index([meetingId])
@@ -193,13 +246,13 @@ model MeetingAttendee {
 /// One row per rule/signal that drove a classification verdict.
 /// Feeds the "why we classified this" explainer in the UI.
 model ClassificationReason {
-  id        String  @id @default(cuid())
+  id        String          @id @default(cuid())
   meetingId String
   meeting   DetectedMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   ok        Boolean? // true = supports verdict, false = refutes, null = neutral/info
   text      String
-  citation  String?  // e.g. "Lobbying Act s. 5(3)"
-  weight    Float    @default(1.0)
+  citation  String? // e.g. "Lobbying Act s. 5(3)"
+  weight    Float           @default(1.0)
 }
 
 // ============================================================
@@ -207,25 +260,25 @@ model ClassificationReason {
 // ============================================================
 
 model DraftMcr {
-  id                String   @id @default(cuid())
-  meetingId         String   @unique
+  id                String          @id @default(cuid())
+  meetingId         String          @unique
   meeting           DetectedMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   // Public MCR structured fields (what actually goes to OCL)
-  subjects          Json     // [{ subjectId, source }]
+  subjects          Json // [{ subjectId, source }]
   institutionId     String?
-  namedLobbyists    Json     // [{ employeeId, name }]
+  namedLobbyists    Json // [{ employeeId, name }]
   // Internal narrative (never filed, for audit trail only)
   description       String?
-  descriptionSource String?  // level-0 | level-1 | level-2 | level-3 | level-4 | manual
+  descriptionSource String? // level-0 | level-1 | level-2 | level-3 | level-4 | manual
   // Full field-level provenance snapshot at time of draft
-  provenance        Json     // { field: { value, source, confidence } }
+  provenance        Json // { field: { value, source, confidence } }
   certifiedAt       DateTime?
-  certifiedById     String?  // Employee id of the senior officer
+  certifiedById     String? // Employee id of the senior officer
   submittedAt       DateTime?
   lrsReceiptId      String?
-  lrsScreenshot     String?  // evidence URL
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  lrsScreenshot     String? // evidence URL
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 }
 
 // ============================================================
@@ -233,16 +286,16 @@ model DraftMcr {
 // ============================================================
 
 model HoursLedgerEntry {
-  id            String   @id @default(cuid())
+  id            String          @id @default(cuid())
   tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   meetingId     String
   meeting       DetectedMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   employeeEmail String
-  bucket        String   // threshold-clock | mcr-reportable
+  bucket        String // threshold-clock | mcr-reportable
   minutes       Int
-  kind          String   @default("meeting") // meeting | prep | grassroots
-  recordedAt    DateTime @default(now())
+  kind          String          @default("meeting") // meeting | prep | grassroots
+  recordedAt    DateTime        @default(now())
 
   @@index([tenantId, bucket, recordedAt])
   @@index([tenantId, employeeEmail, recordedAt])
@@ -256,9 +309,9 @@ model AuditEvent {
   id        String   @id @default(cuid())
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  actor     String   // user email or "system"
-  action    String   // detected | classified | drafted | overridden | certified | submitted | acknowledged
-  subject   String   // entity id affected
+  actor     String // user email or "system"
+  action    String // detected | classified | drafted | overridden | certified | submitted | acknowledged
+  subject   String // entity id affected
   payload   Json?
   createdAt DateTime @default(now())
 
@@ -272,7 +325,7 @@ model AuditEvent {
 // ============================================================
 
 model OclPublicRegistration {
-  id              String   @id
+  id              String    @id
   registrationNum String
   companyName     String
   registrantName  String?
@@ -281,22 +334,22 @@ model OclPublicRegistration {
   status          String
   effectiveDate   DateTime?
   rawPayload      Json
-  ingestedAt      DateTime @default(now())
+  ingestedAt      DateTime  @default(now())
 
   @@index([companyName])
   @@index([registrationNum])
 }
 
 model OclPublicCommReport {
-  id              String   @id
-  registrationId  String
+  id                String   @id
+  registrationId    String
   communicationDate DateTime
-  institution     String
-  dpohName        String
-  dpohTitle       String?
-  subjects        String[]
-  rawPayload      Json
-  ingestedAt      DateTime @default(now())
+  institution       String
+  dpohName          String
+  dpohTitle         String?
+  subjects          String[]
+  rawPayload        Json
+  ingestedAt        DateTime @default(now())
 
   @@index([registrationId])
   @@index([communicationDate])

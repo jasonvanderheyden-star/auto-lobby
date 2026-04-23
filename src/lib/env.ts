@@ -19,6 +19,18 @@ const schema = z.object({
   CLERK_SECRET_KEY: z.string().startsWith("sk_"),
   CLERK_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
 
+  // Google Calendar OAuth
+  GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().startsWith(
+    "GOCSPX-",
+    "must be a Google OAuth client secret (starts with GOCSPX-)",
+  ),
+  GOOGLE_OAUTH_REDIRECT_URI: z.string().url(),
+  CALENDAR_ENCRYPTION_KEY: z.string().refine(
+    (v) => Buffer.from(v, "base64").length === 32,
+    "must be 32 bytes when base64-decoded — generate with: openssl rand -base64 32",
+  ),
+
   // Optional — not yet wired, but validated when present
   ANTHROPIC_API_KEY: z.string().startsWith("sk-ant-").optional(),
   INNGEST_EVENT_KEY: z.string().optional(),
