@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Lobby — Onboarding</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+  body { background-color: #fafaf9; color: #1c1917; }
+  .step-fade { animation: fadeUp 0.35s cubic-bezier(.2,.9,.2,1); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .chip { transition: all 0.15s ease; }
+  .chip:hover { transform: translateY(-1px); }
+  .hint { background: linear-gradient(0deg, #f5f5f4, #fafaf9); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ============ HEADER ============ -->
+<header class="border-b border-stone-200 bg-white">
+  <div class="max-w-5xl mx-auto px-8 py-5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="h-9 w-9 rounded-xl bg-emerald-700 flex items-center justify-center text-white font-bold">A</div>
+      <div>
+        <div class="text-sm font-semibold text-stone-900">Auto Lobby</div>
+        <div class="text-xs text-stone-500">Set up your account</div>
+      </div>
+    </div>
+    <div class="text-xs text-stone-500 hidden sm:block">Takes about 4 minutes · You can edit anything later</div>
+  </div>
+  <!-- Progress -->
+  <div class="max-w-5xl mx-auto px-8 pb-5">
+    <div id="progress" class="flex items-center gap-1.5"></div>
+  </div>
+</header>
+
+<!-- ============ MAIN ============ -->
+<main class="max-w-3xl mx-auto px-8 py-14">
+  <div id="step-container" class="step-fade"></div>
+
+  <div class="flex items-center justify-between pt-10 mt-10 border-t border-stone-200">
+    <button id="back-btn" class="text-sm text-stone-600 hover:text-stone-900 font-medium">← Back</button>
+    <div class="flex items-center gap-4">
+      <button id="skip-btn" class="text-sm text-stone-500 hover:text-stone-800 hidden">Skip this step</button>
+      <button id="next-btn" class="bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2.5 rounded-lg font-medium text-sm">Continue →</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// ===========================================================
+// Config
+// ===========================================================
+const STEPS = [
+  { id: 'welcome',      label: 'Welcome' },
+  { id: 'company',      label: 'Company' },
+  { id: 'team',         label: 'You + team' },
+  { id: 'subjects',     label: 'Subjects' },
+  { id: 'institutions', label: 'Institutions' },
+  { id: 'defaults',     label: 'Defaults' },
+  { id: 'ready',        label: 'Ready' }
+];
+
+// Industry -> default subject + institution IDs
+const INDUSTRY_PRESETS = {
+  'climate-tech': {
+    subjects: ['environment', 'climate', 'energy', 'science-tech', 'industry', 'taxation'],
+    institutions: ['eccc', 'nrcan', 'ised', 'finance', 'pco', 'pmo', 'sdtc', 'cib']
+  },
+  'biotech': {
+    subjects: ['health', 'science-tech', 'industry', 'taxation'],
+    institutions: ['hc', 'phac', 'ised', 'finance', 'nrc']
+  },
+  'fintech': {
+    subjects: ['financial-institutions', 'industry', 'taxation', 'consumer-issues'],
+    institutions: ['finance', 'osfi', 'ised', 'cra']
+  },
+  'other': { subjects: [], institutions: [] }
+};
+
+// ~20 most common OCL subject codes, grouped
+const SUBJECT_GROUPS = [
+  { label: 'Climate, energy & environment', items: [
+    { id: 'environment', label: 'Environment' },
+    { id: 'climate', label: 'Climate change' },
+    { id: 'energy', label: 'Energy' },
+    { id: 'natural-resources', label: 'Natural resources' }
+  ]},
+  { label: 'Economy & industry', items: [
+    { id: 'industry', label: 'Industry' },
+    { id: 'taxation', label: 'Taxation & finance' },
+    { id: 'science-tech', label: 'Science & technology' },
+    { id: 'intl-trade', label: 'International trade' },
+    { id: 'financial-institutions', label: 'Financial institutions' }
+  ]},
+  { label: 'Health & social', items: [
+    { id: 'health', label: 'Health' },
+    { id: 'employment', label: 'Employment & training' },
+    { id: 'consumer-issues', label: 'Consumer issues' }
+  ]}
+];
+
+const INSTITUTION_OPTIONS = [
+  { id: 'eccc',  label: 'Environment and Climate Change Canada',           acronym: 'ECCC' },
+  { id: 'nrcan', label: 'Natural Resources Canada',                        acronym: 'NRCan' },
+  { id: 'ised',  label: 'Innovation, Science and Economic Development',    acronym: 'ISED' },
+  { id: 'finance', label: 'Finance Canada',                                acronym: 'FIN' },
+  { id: 'pco',   label: 'Privy Council Office',                            acronym: 'PCO' },
+  { id: 'pmo',   label: "Prime Minister's Office",                         acronym: 'PMO' },
+  { id: 'sdtc',  label: 'Sustainable Development Technology Canada',       acronym: 'SDTC' },
+  { id: 'cib',   label: 'Canada Infrastructure Bank',                      acronym: 'CIB' },
+  { id: 'tbs',   label: 'Treasury Board Secretariat',                      acronym: 'TBS' },
+  { id: 'gac',   label: 'Global Affairs Canada',                           acronym: 'GAC' },
+  { id: 'aafc',  label: 'Agriculture and Agri-Food Canada',                acronym: 'AAFC' },
+  { id: 'tc',    label: 'Transport Canada',                                acronym: 'TC' },
+  { id: 'pspc',  label: 'Public Services and Procurement Canada',          acronym: 'PSPC' },
+  { id: 'cra',   label: 'Canada Revenue Agency',                           acronym: 'CRA' },
+  { id: 'hc',    label: 'Health Canada',                                   acronym: 'HC' },
+  { id: 'phac',  label: 'Public Health Agency of Canada',                  acronym: 'PHAC' },
+  { id: 'hoc',   label: 'House of Commons',                                acronym: 'HoC' },
+  { id: 'senate',label: 'Senate of Canada',                                acronym: 'Senate' },
+  { id: 'iaac',  label: 'Impact Assessment Agency of Canada',              acronym: 'IAAC' },
+  { id: 'cer',   label: 'Canada Energy Regulator',                         acronym: 'CER' },
+  { id: 'nrc',   label: 'National Research Council',                       acronym: 'NRC' },
+  { id: 'csa',   label: 'Canadian Space Agency',                           acronym: 'CSA' },
+  { id: 'osfi',  label: 'Office of the Superintendent of Financial Institutions', acronym: 'OSFI' }
+];
+
+// ===========================================================
+// State (pre-populated for Deep Sky so you can see the happy path)
+// ===========================================================
+let currentStep = 0;
+const state = {
+  companyName: 'Deep Sky Climate Corporation',
+  industry: 'climate-tech',
+  jurisdiction: 'federal',
+  hasRegistration: 'not-yet', // not-yet | active | lapsed
+  existingRegistrationNum: '',
+  registrant: { name: '', email: '', role: '' },
+  team: [],
+  subjects: [],
+  institutions: [],
+  prepTimeMultiplier: 0.25,
+  calendarBodyOptIn: false,
+  notesConnectors: { granola: false, otter: false, zoomAi: false, otherCtx: false },
+  filingVoiceSample: ''
+};
+
+// Apply industry preset on first load
+applyIndustryPreset();
+
+function applyIndustryPreset() {
+  const preset = INDUSTRY_PRESETS[state.industry] || INDUSTRY_PRESETS.other;
+  state.subjects = [...preset.subjects];
+  state.institutions = [...preset.institutions];
+}
+
+// ===========================================================
+// Rendering
+// ===========================================================
+function renderProgress() {
+  const el = document.getElementById('progress');
+  el.innerHTML = STEPS.map((s, i) => `
+    <div class="flex items-center gap-2 ${i < STEPS.length - 1 ? 'flex-1' : ''}">
+      <div class="flex items-center gap-2 cursor-pointer" onclick="goTo(${i})">
+        <div class="h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+          i < currentStep ? 'bg-emerald-700 text-white'
+          : i === currentStep ? 'bg-emerald-700 text-white ring-4 ring-emerald-100'
+          : 'bg-stone-200 text-stone-500'
+        }">
+          ${i < currentStep ? '✓' : i + 1}
+        </div>
+        <div class="text-xs ${i === currentStep ? 'font-semibold text-stone-900' : 'text-stone-500'} hidden md:block">${s.label}</div>
+      </div>
+      ${i < STEPS.length - 1 ? `<div class="flex-1 h-px ${i < currentStep ? 'bg-emerald-700' : 'bg-stone-200'}"></div>` : ''}
+    </div>
+  `).join('');
+}
+
+function renderStep() {
+  const el = document.getElementById('step-container');
+  el.classList.remove('step-fade'); void el.offsetWidth; el.classList.add('step-fade');
+  const step = STEPS[currentStep].id;
+  el.innerHTML = RENDERERS[step]();
+
+  // Footer button state
+  document.getElementById('back-btn').style.visibility = currentStep === 0 ? 'hidden' : 'visible';
+  const skip = document.getElementById('skip-btn');
+  skip.classList.toggle('hidden', !['defaults'].includes(step));
+  const next = document.getElementById('next-btn');
+  next.textContent = currentStep === STEPS.length - 1 ? 'Create my Auto Lobby →' : 'Continue →';
+}
+
+// ===========================================================
+// Step renderers
+// ===========================================================
+const RENDERERS = {
+  welcome: () => `
+    <div class="text-center">
+      <div class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full mb-6">4 minutes · one time</div>
+      <h1 class="text-3xl font-bold text-stone-900 mb-4">Let's give Auto Lobby everything it needs to work.</h1>
+      <p class="text-stone-600 text-lg leading-relaxed max-w-xl mx-auto mb-8">
+        The point of this setup is simple: so you never have to fill in a Monthly Communication Report again.
+        Auto Lobby uses what you share here as priors for every auto-drafted filing, every classification,
+        every field pre-fill.
+      </p>
+      <div class="grid grid-cols-3 gap-6 max-w-2xl mx-auto text-left hint border border-stone-200 rounded-xl p-6 mt-8">
+        <div>
+          <div class="text-2xl font-bold text-emerald-700">~4 min</div>
+          <div class="text-xs text-stone-600 mt-1">To set this up now</div>
+        </div>
+        <div>
+          <div class="text-2xl font-bold text-emerald-700">~5 min</div>
+          <div class="text-xs text-stone-600 mt-1">Monthly for CEO to certify</div>
+        </div>
+        <div>
+          <div class="text-2xl font-bold text-emerald-700">0 min</div>
+          <div class="text-xs text-stone-600 mt-1">Every other day</div>
+        </div>
+      </div>
+      <p class="text-xs text-stone-500 mt-8">You can edit any of this later from Settings.</p>
+    </div>
+  `,
+
+  company: () => `
+    <div>
+      <h2 class="text-2xl font-bold text-stone-900 mb-2">Your company</h2>
+      <p class="text-stone-600 mb-8">The basics — what you tell us here goes on every MCR.</p>
+
+      <div class="space-y-6">
+        <div>
+          <label class="block text-sm font-semibold text-stone-800 mb-2">Legal company name</label>
+          <input id="companyName" type="text" value="${state.companyName}" class="w-full border border-stone-300 rounded-lg px-4 py-2.5 text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600"/>
+          <p class="text-xs text-stone-500 mt-2">Use the name as it appears on the OCL registry (or will, if you're new).</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-stone-800 mb-2">What does your company do?</label>
+          <select id="industry" onchange="onIndustryChange(this.value)" class="w-full border border-stone-300 rounded-lg px-4 py-2.5 text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600">
+            <option value="climate-tech" ${state.industry === 'climate-tech' ? 'selected' : ''}>Climate tech · clean energy · carbon removal</option>
+            <option value="biotech" ${state.industry === 'biotech' ? 'selected' : ''}>Biotech · pharma · health</option>
+            <option value="fintech" ${state.industry === 'fintech' ? 'selected' : ''}>Fintech · financial services</option>
+            <option value="other" ${state.industry === 'other' ? 'selected' : ''}>Other — I'll configure manually</option>
+          </select>
+          <p class="text-xs text-stone-500 mt-2">We use this to pre-select likely subjects and institutions on the next steps.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-stone-800 mb-3">Do you have an active OCL registration?</label>
+          <div class="grid grid-cols-3 gap-3">
+            ${['not-yet', 'active', 'lapsed'].map(v => `
+              <button onclick="state.hasRegistration='${v}'; renderStep()" class="border-2 rounded-xl px-4 py-3 text-left ${state.hasRegistration === v ? 'border-emerald-700 bg-emerald-50' : 'border-stone-200 bg-white hover:border-stone-300'}">
+                <div class="text-sm font-semibold text-stone-900">${{'not-yet':'Not yet','active':'Active','lapsed':'Lapsed'}[v]}</div>
+                <div class="text-xs text-stone-600 mt-1">${{'not-yet':'Help me register','active':'I have a number','lapsed':'Needs renewal'}[v]}</div>
+              </button>
+            `).join('')}
+          </div>
+          ${state.hasRegistration === 'active' ? `
+            <div class="mt-4">
+              <input id="regNum" type="text" placeholder="Registration # (e.g. 123456-1234)" value="${state.existingRegistrationNum}" class="w-full border border-stone-300 rounded-lg px-4 py-2.5"/>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <div class="mt-8 p-4 rounded-lg bg-amber-50 border border-amber-200">
+        <div class="text-xs font-semibold text-amber-900 mb-1">Why we ask</div>
+        <div class="text-xs text-amber-800">Your company name + registration number are the two fields that appear on every single MCR. Getting these right now means zero typos downstream — forever.</div>
+      </div>
+    </div>
+  `,
+
+  team: () => `
+    <div>
+      <h2 class="text-2xl font-bold text-stone-900 mb-2">You + your team</h2>
+      <p class="text-stone-600 mb-8">Who certifies filings, and whose calendars should we watch?</p>
+
+      <!-- Registrant -->
+      <div class="border border-stone-200 rounded-xl p-5 bg-white">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">The registrant</div>
+            <div class="text-sm text-stone-600">Senior officer who certifies every monthly filing</div>
+          </div>
+          <div class="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md font-semibold">Required</div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <input placeholder="Full name" value="${state.registrant.name}" oninput="state.registrant.name=this.value" class="border border-stone-300 rounded-lg px-3 py-2 text-sm"/>
+          <input placeholder="Role (e.g. CEO)" value="${state.registrant.role}" oninput="state.registrant.role=this.value" class="border border-stone-300 rounded-lg px-3 py-2 text-sm"/>
+          <input placeholder="Email" value="${state.registrant.email}" oninput="state.registrant.email=this.value" class="border border-stone-300 rounded-lg px-3 py-2 text-sm col-span-2"/>
+        </div>
+        <div class="text-xs text-stone-500 mt-3">They'll sign in with GCKey once per month to authorize submission. We never store GCKey credentials.</div>
+      </div>
+
+      <!-- Team members -->
+      <div class="mt-6">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <div class="text-sm font-semibold text-stone-900">Others on registration</div>
+            <div class="text-xs text-stone-600">People whose calendars may contain reportable meetings</div>
+          </div>
+          <button onclick="addTeamMember()" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">+ Add person</button>
+        </div>
+
+        <div id="team-list" class="space-y-2">
+          ${state.team.length === 0 ? `
+            <div class="border border-dashed border-stone-300 rounded-lg p-6 text-center">
+              <div class="text-sm text-stone-500">No team members yet</div>
+              <button onclick="addTeamMember()" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800 mt-2">+ Add your first team member</button>
+            </div>
+          ` : state.team.map((m, i) => `
+            <div class="flex items-center gap-3 border border-stone-200 rounded-lg px-3 py-2 bg-white">
+              <input placeholder="Name" value="${m.name}" oninput="state.team[${i}].name=this.value" class="flex-1 text-sm border-0 focus:ring-0 bg-transparent"/>
+              <input placeholder="Email" value="${m.email}" oninput="state.team[${i}].email=this.value" class="flex-1 text-sm border-0 focus:ring-0 bg-transparent"/>
+              <input placeholder="Role" value="${m.role}" oninput="state.team[${i}].role=this.value" class="w-32 text-sm border-0 focus:ring-0 bg-transparent"/>
+              <label class="flex items-center gap-1.5 text-xs text-stone-600">
+                <input type="checkbox" ${m.isLobbyist ? 'checked' : ''} onchange="state.team[${i}].isLobbyist=this.checked" class="rounded text-emerald-700 focus:ring-emerald-600"/>
+                Lobbyist
+              </label>
+              <button onclick="removeTeamMember(${i})" class="text-stone-400 hover:text-red-600 text-sm">✕</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="mt-6 p-4 rounded-lg hint border border-stone-200">
+        <div class="text-xs font-semibold text-stone-800 mb-1">What calendar access means</div>
+        <div class="text-xs text-stone-600">In the next phase we'll ask each named person to connect their calendar via OAuth. We read attendees and times — body content is opt-in per person.</div>
+      </div>
+    </div>
+  `,
+
+  subjects: () => `
+    <div>
+      <h2 class="text-2xl font-bold text-stone-900 mb-2">Default subject matters</h2>
+      <p class="text-stone-600 mb-8">Pick the OCL subjects you typically engage on. These pre-fill every auto-drafted MCR — you can override per meeting.</p>
+
+      ${SUBJECT_GROUPS.map(group => `
+        <div class="mb-6">
+          <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-3">${group.label}</div>
+          <div class="flex flex-wrap gap-2">
+            ${group.items.map(s => `
+              <button onclick="toggleSubject('${s.id}')" class="chip px-4 py-2 rounded-full text-sm font-medium border ${
+                state.subjects.includes(s.id)
+                  ? 'bg-emerald-700 text-white border-emerald-700'
+                  : 'bg-white text-stone-700 border-stone-300 hover:border-stone-400'
+              }">
+                ${state.subjects.includes(s.id) ? '✓ ' : ''}${s.label}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+
+      <div class="mt-8 p-4 rounded-lg bg-emerald-50 border border-emerald-200">
+        <div class="text-xs font-semibold text-emerald-900 mb-1">${state.subjects.length} selected as defaults</div>
+        <div class="text-xs text-emerald-800">Auto Lobby will pre-select these on every draft MCR. If a meeting covers something else (e.g. grants, procurement), the classifier will add that subject automatically and you'll see it on the certification page.</div>
+      </div>
+    </div>
+  `,
+
+  institutions: () => `
+    <div>
+      <h2 class="text-2xl font-bold text-stone-900 mb-2">Institutions you engage with</h2>
+      <p class="text-stone-600 mb-8">The federal bodies you typically meet with. Auto Lobby uses this to route detection — and to suggest the institution field when it's ambiguous from the attendee list.</p>
+
+      <div class="space-y-2">
+        ${INSTITUTION_OPTIONS.map(inst => `
+          <button onclick="toggleInstitution('${inst.id}')" class="w-full flex items-center justify-between text-left border rounded-lg px-4 py-3 ${
+            state.institutions.includes(inst.id)
+              ? 'bg-emerald-50 border-emerald-300'
+              : 'bg-white border-stone-200 hover:border-stone-300'
+          }">
+            <div class="flex items-center gap-3">
+              <div class="h-7 w-7 rounded-md ${state.institutions.includes(inst.id) ? 'bg-emerald-700 text-white' : 'bg-stone-100 text-stone-600'} flex items-center justify-center text-[10px] font-bold">
+                ${state.institutions.includes(inst.id) ? '✓' : inst.acronym.slice(0,3).toUpperCase()}
+              </div>
+              <div>
+                <div class="text-sm font-medium text-stone-900">${inst.label}</div>
+                <div class="text-xs text-stone-500">${inst.acronym}</div>
+              </div>
+            </div>
+            <div class="text-xs text-stone-400">${state.institutions.includes(inst.id) ? 'Selected' : 'Tap to add'}</div>
+          </button>
+        `).join('')}
+      </div>
+
+      <div class="mt-6 p-4 rounded-lg hint border border-stone-200">
+        <div class="text-xs font-semibold text-stone-800 mb-1">${state.institutions.length} institutions selected</div>
+        <div class="text-xs text-stone-600">These become your "key institutions" — they appear first in auto-fill suggestions. Meetings with other federal bodies will still be detected and auto-drafted; they just won't be pre-ranked.</div>
+      </div>
+    </div>
+  `,
+
+  defaults: () => `
+    <div>
+      <h2 class="text-2xl font-bold text-stone-900 mb-2">Smart defaults</h2>
+      <p class="text-stone-600 mb-8">Fine-tune how Auto Lobby counts hours and generates descriptions. Skip this and we'll use sensible defaults.</p>
+
+      <!-- Prep time -->
+      <div class="border border-stone-200 rounded-xl p-5 bg-white mb-5">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <div class="text-sm font-semibold text-stone-900">Count prep time?</div>
+            <div class="text-xs text-stone-600 mt-1">The Lobbying Act counts <em>preparation</em> as lobbying time, but only if directly tied to a communication.</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-4 gap-2">
+          ${[
+            { v: 0, label: '0%', sub: "Don't count" },
+            { v: 0.15, label: '15%', sub: 'Light' },
+            { v: 0.25, label: '25%', sub: 'Recommended' },
+            { v: 0.5, label: '50%', sub: 'Heavy' }
+          ].map(o => `
+            <button onclick="state.prepTimeMultiplier=${o.v}; renderStep()" class="rounded-lg border-2 p-3 text-center ${state.prepTimeMultiplier === o.v ? 'border-emerald-700 bg-emerald-50' : 'border-stone-200 bg-white hover:border-stone-300'}">
+              <div class="text-lg font-bold text-stone-900">${o.label}</div>
+              <div class="text-xs text-stone-500">${o.sub}</div>
+            </button>
+          `).join('')}
+        </div>
+        <div class="text-xs text-stone-500 mt-3">25% means: a 1-hour meeting adds 15 minutes to the threshold clock. Conservative for the 8-hour trigger.</div>
+      </div>
+
+      <!-- Body opt-in -->
+      <div class="border border-stone-200 rounded-xl p-5 bg-white mb-5">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <div class="text-sm font-semibold text-stone-900">Let Auto Lobby read meeting bodies</div>
+            <div class="text-xs text-stone-600 mt-1 max-w-md">Only attendees + times by default. If enabled, we also read meeting notes + invite body to write better descriptions. Stays inside your tenant, never used for training.</div>
+          </div>
+          <button onclick="state.calendarBodyOptIn = !state.calendarBodyOptIn; renderStep()" class="ml-4 relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${state.calendarBodyOptIn ? 'bg-emerald-700' : 'bg-stone-300'}">
+            <span class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${state.calendarBodyOptIn ? 'translate-x-5' : 'translate-x-0.5'}"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Notes connectors -->
+      <div class="border border-stone-200 rounded-xl p-5 bg-white">
+        <div class="text-sm font-semibold text-stone-900 mb-1">Meeting notes connectors</div>
+        <div class="text-xs text-stone-600 mb-4">If you use any of these, Auto Lobby can read the transcript to draft richer MCR descriptions. Enable now or later.</div>
+        <div class="space-y-2">
+          ${[
+            { key: 'granola', name: 'Granola', desc: 'AI meeting notes' },
+            { key: 'otter',   name: 'Otter.ai', desc: 'Transcription + notes' },
+            { key: 'zoomAi',  name: 'Zoom AI Companion', desc: 'Built-in Zoom summaries' },
+            { key: 'otherCtx',name: 'Manual notes', desc: 'Paste in per-meeting' }
+          ].map(c => `
+            <div class="flex items-center justify-between border border-stone-200 rounded-lg px-4 py-3">
+              <div>
+                <div class="text-sm font-medium text-stone-900">${c.name}</div>
+                <div class="text-xs text-stone-500">${c.desc}</div>
+              </div>
+              <button onclick="state.notesConnectors['${c.key}'] = !state.notesConnectors['${c.key}']; renderStep()" class="relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${state.notesConnectors[c.key] ? 'bg-emerald-700' : 'bg-stone-300'}">
+                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${state.notesConnectors[c.key] ? 'translate-x-5' : 'translate-x-0.5'}"></span>
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `,
+
+  ready: () => {
+    const autoFillEstimate = estimateAutoFillCoverage();
+    return `
+      <div>
+        <h2 class="text-2xl font-bold text-stone-900 mb-2">You're ready.</h2>
+        <p class="text-stone-600 mb-8">Here's what Auto Lobby knows about you — and what it'll do automatically from now on.</p>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="border border-stone-200 rounded-xl p-5 bg-white">
+            <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Organization</div>
+            <div class="text-sm font-bold text-stone-900">${state.companyName}</div>
+            <div class="text-xs text-stone-600 mt-1">${{'climate-tech':'Climate tech','biotech':'Biotech','fintech':'Fintech','other':'Other'}[state.industry]} · ${state.hasRegistration === 'active' ? 'OCL Reg #' + (state.existingRegistrationNum || '(pending)') : 'Registration: ' + state.hasRegistration}</div>
+          </div>
+          <div class="border border-stone-200 rounded-xl p-5 bg-white">
+            <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-2">Registrant</div>
+            <div class="text-sm font-bold text-stone-900">${state.registrant.name || '—'}</div>
+            <div class="text-xs text-stone-600 mt-1">${state.registrant.role || ''} · ${state.registrant.email || ''}</div>
+          </div>
+        </div>
+
+        <div class="border border-stone-200 rounded-xl p-5 bg-white mb-6">
+          <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-3">Team</div>
+          ${state.team.length === 0 ? `<div class="text-sm text-stone-500">Just the registrant for now</div>` :
+            state.team.map(m => `<div class="flex items-center justify-between text-sm py-1.5">
+              <div class="flex items-center gap-2">
+                <div class="h-6 w-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-semibold">${(m.name || '?').split(' ').map(x => x[0]).slice(0,2).join('')}</div>
+                <div class="text-stone-800">${m.name}</div>
+                <div class="text-xs text-stone-500">${m.role}</div>
+              </div>
+              ${m.isLobbyist ? '<span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-semibold">Lobbyist</span>' : ''}
+            </div>`).join('')
+          }
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="border border-stone-200 rounded-xl p-5 bg-white">
+            <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-3">Default subjects · ${state.subjects.length}</div>
+            <div class="flex flex-wrap gap-1.5">
+              ${state.subjects.map(id => {
+                const sub = SUBJECT_GROUPS.flatMap(g => g.items).find(s => s.id === id);
+                return sub ? `<span class="text-[11px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded font-medium">${sub.label}</span>` : '';
+              }).join('')}
+            </div>
+          </div>
+          <div class="border border-stone-200 rounded-xl p-5 bg-white">
+            <div class="text-xs font-semibold uppercase tracking-wide text-stone-500 mb-3">Key institutions · ${state.institutions.length}</div>
+            <div class="flex flex-wrap gap-1.5">
+              ${state.institutions.map(id => {
+                const inst = INSTITUTION_OPTIONS.find(i => i.id === id);
+                return inst ? `<span class="text-[11px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded font-medium">${inst.acronym}</span>` : '';
+              }).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Headline -->
+        <div class="rounded-2xl bg-emerald-700 text-white p-6 mb-6">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-xs uppercase tracking-wide font-semibold text-emerald-100 mb-2">Auto-fill coverage</div>
+              <div class="text-4xl font-bold">${autoFillEstimate}%</div>
+              <div class="text-sm text-emerald-100 mt-1">of MCR fields will be pre-populated automatically</div>
+            </div>
+            <div class="text-6xl leading-none">🎯</div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-lg hint border border-stone-200">
+          <div class="text-xs font-semibold text-stone-800 mb-1">What happens when you click Create</div>
+          <ul class="text-xs text-stone-600 space-y-1 ml-4 list-disc">
+            <li>Your OrgProfile + Tenant are saved to Auto Lobby</li>
+            <li>We send each named lobbyist a calendar-connection invite</li>
+            <li>Once calendars connect, detection starts <em>immediately</em> — no backfill needed for past meetings</li>
+            <li>On day 15 of next month you'll get one action: certify + submit</li>
+          </ul>
+        </div>
+      </div>
+    `;
+  }
+};
+
+// ===========================================================
+// Helpers
+// ===========================================================
+function onIndustryChange(v) { state.industry = v; applyIndustryPreset(); renderStep(); }
+function toggleSubject(id) {
+  if (state.subjects.includes(id)) state.subjects = state.subjects.filter(s => s !== id);
+  else state.subjects.push(id);
+  renderStep();
+}
+function toggleInstitution(id) {
+  if (state.institutions.includes(id)) state.institutions = state.institutions.filter(s => s !== id);
+  else state.institutions.push(id);
+  renderStep();
+}
+function addTeamMember() { state.team.push({ name: '', email: '', role: '', isLobbyist: true }); renderStep(); }
+function removeTeamMember(i) { state.team.splice(i, 1); renderStep(); }
+function goTo(i) { if (i <= currentStep) { currentStep = i; renderAll(); } }
+
+// Auto-fill coverage estimator (for the final headline)
+function estimateAutoFillCoverage() {
+  let score = 40; // baseline from tenant + registrant
+  if (state.subjects.length >= 3) score += 15;
+  if (state.institutions.length >= 3) score += 15;
+  if (state.team.length >= 1) score += 10;
+  if (state.calendarBodyOptIn) score += 8;
+  const conn = Object.values(state.notesConnectors).filter(Boolean).length;
+  score += Math.min(conn * 4, 12);
+  return Math.min(score, 96);
+}
+
+// Save on step fields to persist interim edits (company name + reg number)
+function persistInputs() {
+  const name = document.getElementById('companyName'); if (name) state.companyName = name.value;
+  const ind = document.getElementById('industry'); if (ind) state.industry = ind.value;
+  const reg = document.getElementById('regNum'); if (reg) state.existingRegistrationNum = reg.value;
+}
+
+// ===========================================================
+// Navigation
+// ===========================================================
+document.getElementById('next-btn').addEventListener('click', () => {
+  persistInputs();
+  if (currentStep < STEPS.length - 1) {
+    currentStep++;
+    renderAll();
+  } else {
+    alert('In the real app: POST to /api/onboarding → create Tenant + OrgProfile + Employees → redirect to /dashboard.\n\nFor now — this prototype ends here. Jason: this is where Claude Code would take over and build the server side.');
+  }
+});
+document.getElementById('back-btn').addEventListener('click', () => {
+  persistInputs();
+  if (currentStep > 0) { currentStep--; renderAll(); }
+});
+document.getElementById('skip-btn').addEventListener('click', () => {
+  if (currentStep < STEPS.length - 1) { currentStep++; renderAll(); }
+});
+
+function renderAll() { renderProgress(); renderStep(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+renderAll();
+</script>
+</body>
+</html>

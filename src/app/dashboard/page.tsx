@@ -43,6 +43,12 @@ export default async function DashboardPage() {
               >
                 Registry
               </Link>
+              <Link
+                className="rounded-md px-3 py-1.5 text-stone-600 hover:bg-stone-100"
+                href="/settings/calendars"
+              >
+                Calendars
+              </Link>
             </nav>
           </div>
           <OrgSwitcher />
