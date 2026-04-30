@@ -135,12 +135,43 @@ Work in this order. Each is roughly a 2–4 hour unit. Ship one at a time; commi
 
 **Phase 0 is complete.**
 
-Phase 1 (not yet started):
-7. **Google Calendar OAuth + ingestion.** Connect a Google Calendar, ingest events, feed the detection pipeline.
+## Phase 1 — Calendar ingestion (complete)
 
-Only after Phase 0 ships:
+7. ✅ **Google Calendar OAuth + ingestion.** Connect a Google Calendar, ingest events, feed the detection pipeline.
+
+Shipped in four chunks:
+
+- **Chunk 1** (`f8d45ce`): schema migration for `CalendarConnection` + `RawCalendarEvent`, AES-256-GCM token encryption (`src/server/crypto/tokens.ts`), Zod-validated Google + encryption env vars.
+- **Chunk 2** (`b75a0b4`): Google OAuth start route + callback with 7-error branching, CSRF-safe state cookie (encrypted, 10-min TTL, SameSite=Lax), Settings UI at `/settings/calendars`. First Deep Sky calendar connected end-to-end.
+- **Chunk 3A** (`661472a`): Inngest SDK install, `/api/inngest` route, client at `src/lib/inngest.ts`, middleware updated to allow Inngest path through Clerk.
+- **Chunk 3B** (`d5741e7`): Google Calendar API client at `src/server/google/calendar-client.ts` with proactive token refresh (5-min buffer), `CalendarAuthError` taxonomy, marks connection `token_refresh_failed` on failure.
+- **Chunk 3C** (`fe15886`): Inngest polling worker — cron `*/15 * * * *` fans out one event per active connection, per-connection sync fetches with `syncToken` (incremental) or `timeMin/timeMax` (full), upserts to `RawCalendarEvent` keyed on `[connectionId, externalId]`, persists `syncToken` and `lastSyncedAt`. Handles `410 Gone` (expired sync token) by clearing and falling back to full sync next run.
+- **Chunk 4** (`b885b44`): settings page polish — relative-time helper ("Synced X minutes ago"), `Sync now` server action that queues an Inngest event, `Reconnect` button on `token_refresh_failed` connections.
+
+**Outcome:** 1,469+ events ingested for Deep Sky on first run. Incremental sync working, reconnect flow live.
+
+## Phase 1 known issues / dev quirks
+
+- **Google OAuth refresh tokens expire after 7 days** for apps in "Testing" publishing status. Users hit `token_refresh_failed`; the Settings page Reconnect button handles it. Long-term fix: publish the OAuth app for verified status.
+- **Inngest cron only fires** when `npx inngest-cli@latest dev -u http://localhost:3000/api/inngest` is running in a separate terminal during local dev. Production will use Inngest Cloud — `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY` replace `INNGEST_DEV=1`.
+- **Server-action "Sync now" gives no visual feedback** — the click queues an Inngest event but the UI doesn't show a "Syncing..." state. The actual `lastSyncedAt` updates a few seconds later when the worker finishes. Backlog: add an optimistic syncing badge.
+- **Wide-net ingestion is by design.** All calendar events ingest into `RawCalendarEvent` regardless of whether they involve government attendees. Filtering happens at Layer 2 (DPOH classification → `DetectedMeeting`). See "Anti-over-reporting bias" in non-negotiable constraints — the principle applies to *reporting*, not ingestion. Wide ingestion is needed for threshold accounting (denominator) and audit-trail negative evidence ("we considered this and excluded it").
+
+## Phase 2 — DPOH resolution + classifier (next)
+
+Goal: identify which of the 1,469+ raw events involve a Designated Public Office Holder, classify reportable vs. non-reportable, write `DetectedMeeting` rows with provenance.
+
+**Data sources to evaluate:**
+- GEDS (Government Electronic Directory Services) — federal employees with positions
+- parl.ca — MPs and Senators
+- Treasury Board ministerial exempt staff lists
+
+**First chunk likely:** institution + DPOH registry seeding. Start with cabinet ministers and their exempt staff plus senior bureaucrats (DM, ADM) at the top ~10 institutions Deep Sky engages — climate (ECCC), NRCan, finance, ISED, treasury, ag, transport, infrastructure, foreign affairs (GAC), industry.
+
+Then: attendee-resolution service (email → institution → official → DPOH y/n with confidence + dpohBasis citation), classifier MVP (Lobbying Act s. 5(1) tests for oral, arranged-in-advance communication on a registrable subject), `DetectedMeeting` writes with `ClassificationReason` rows for every signal that drove the verdict.
+
+Only after Phase 1 ships:
 - DPOH resolution service (GEDS + Parliament + ministerial exempt staff)
-- Google Calendar OAuth + ingestion
 - Classifier MVP
 - Monthly Certification UI (match `prototypes/Monthly-Certification.html`)
 - Playwright submission harness
