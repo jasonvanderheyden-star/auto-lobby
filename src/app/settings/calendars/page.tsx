@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { getTenantContext } from "@/server/tenant/context";
 import { db } from "@/lib/db";
+import { relativeTime } from "@/lib/relative-time";
+import { syncCalendarNow } from "@/server/calendar/actions";
 
 export const metadata = { title: "Calendar Connections — Auto Lobby" };
 
@@ -31,17 +33,6 @@ const STATUS_STYLES = {
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" });
-}
-
-function relativeTime(d: Date): string {
-  const diff = Date.now() - d.getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} hour${hrs === 1 ? "" : "s"} ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
 export default async function CalendarSettingsPage({ searchParams }: PageProps) {
@@ -183,6 +174,27 @@ export default async function CalendarSettingsPage({ searchParams }: PageProps) 
                               ? `Last synced ${relativeTime(conn.lastSyncedAt)}`
                               : "Not yet synced"}
                           </p>
+                          <div className="mt-3 flex items-center gap-2">
+                            {conn.status === "active" && (
+                              <form action={syncCalendarNow}>
+                                <input type="hidden" name="connectionId" value={conn.id} />
+                                <button
+                                  type="submit"
+                                  className="rounded-md border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50"
+                                >
+                                  Sync now
+                                </button>
+                              </form>
+                            )}
+                            {(conn.status === "token_refresh_failed" || conn.status === "disconnected") && (
+                              <a
+                                href="/api/oauth/google/start"
+                                className="rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800"
+                              >
+                                Reconnect
+                              </a>
+                            )}
+                          </div>
                           {/* TODO: add disconnect button here (requires token revocation at Google + row update) */}
                         </div>
                       </li>
