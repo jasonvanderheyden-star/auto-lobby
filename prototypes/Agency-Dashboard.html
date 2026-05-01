@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agency Dashboard — Auto Lobby (white-label mockup)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Auto Lobby base palette */
+    --emerald-50: #ecfdf5;
+    --emerald-100: #d1fae5;
+    --emerald-200: #a7f3d0;
+    --emerald-600: #059669;
+    --emerald-700: #047857;
+    --emerald-800: #065f46;
+    --stone-50: #fafaf9;
+    --stone-100: #f5f5f4;
+    --stone-200: #e7e5e4;
+    --stone-300: #d6d3d1;
+    --stone-400: #a8a29e;
+    --stone-500: #78716c;
+    --stone-600: #57534e;
+    --stone-700: #44403c;
+    --stone-900: #1c1917;
+
+    /* Agency white-label palette (Earnscliffe-themed mockup) */
+    --brand-primary: #1e293b;       /* slate / navy — replaceable per agency */
+    --brand-accent: #b91c1c;        /* burgundy accent — replaceable */
+    --brand-accent-soft: #fee2e2;
+    --brand-light: #f1f5f9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--stone-50);
+    color: var(--stone-900);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* ── Top app nav (white-label) ─────────────────────────────── */
+  .topnav {
+    background: var(--brand-primary);
+    color: #fff;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .topnav-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 28px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .agency-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .agency-logo {
+    width: 32px; height: 32px;
+    background: var(--brand-accent);
+    color: #fff;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px;
+    letter-spacing: -0.02em;
+  }
+  .agency-name {
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+  }
+  .agency-name .sub {
+    font-weight: 400;
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    margin-left: 6px;
+  }
+  .topnav nav {
+    display: flex;
+    gap: 4px;
+  }
+  .topnav nav a {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background .15s;
+  }
+  .topnav nav a:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .topnav nav a.active { background: rgba(255,255,255,0.1); color: #fff; }
+  .user-chip {
+    display: flex; align-items: center; gap: 10px;
+    color: rgba(255,255,255,0.85);
+    font-size: 13px;
+  }
+  .user-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--brand-accent);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 11px;
+  }
+
+  /* ── Powered-by attribution strip ─────────────────────────── */
+  .powered-strip {
+    background: var(--brand-primary);
+    color: rgba(255,255,255,0.45);
+    text-align: right;
+    font-size: 11px;
+    padding: 4px 28px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    letter-spacing: 0.02em;
+  }
+  .powered-strip strong { color: rgba(255,255,255,0.65); font-weight: 500; }
+
+  /* ── Main content ─────────────────────────────────────────── */
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 36px 28px 80px;
+  }
+
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 28px;
+  }
+  .header-row h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.02em;
+    color: var(--brand-primary);
+  }
+  .header-row .subtitle {
+    color: var(--stone-500);
+    font-size: 14px;
+    margin: 0;
+  }
+  .header-row .actions { display: flex; gap: 8px; }
+  .btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .btn-primary {
+    background: var(--brand-accent);
+    color: #fff;
+  }
+  .btn-secondary {
+    background: #fff;
+    color: var(--stone-700);
+    border-color: var(--stone-300);
+  }
+
+  /* ── KPI strip ────────────────────────────────────────────── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+  .kpi-card {
+    background: #fff;
+    padding: 18px 20px;
+    border: 1px solid var(--stone-200);
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  }
+  .kpi-card .label {
+    font-size: 11px;
+    color: var(--stone-500);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .kpi-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--brand-primary);
+    letter-spacing: -0.02em;
+  }
+  .kpi-card .delta {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--stone-500);
+  }
+  .kpi-card .delta.good { color: var(--emerald-700); }
+  .kpi-card .delta.warn { color: var(--brand-accent); }
+
+  /* ── Two-column layout ────────────────────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+  }
+
+  /* ── Section cards ────────────────────────────────────────── */
+  .section-card {
+    background: #fff;
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .section-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--stone-100);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .section-header h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--brand-primary);
+    letter-spacing: -0.01em;
+  }
+  .section-header .filter {
+    display: flex; gap: 6px;
+  }
+  .filter button {
+    background: var(--stone-50);
+    border: 1px solid var(--stone-200);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    color: var(--stone-600);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .filter button.active {
+    background: var(--brand-primary);
+    color: #fff;
+    border-color: var(--brand-primary);
+  }
+
+  /* ── Client list ──────────────────────────────────────────── */
+  .client-row {
+    display: grid;
+    grid-template-columns: 32px 2fr 1fr 1fr 100px;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--stone-100);
+    align-items: center;
+    font-size: 13px;
+  }
+  .client-row:hover { background: var(--stone-50); }
+  .client-row:last-child { border-bottom: 0; }
+  .status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-left: 6px;
+  }
+  .status-dot.green { background: var(--emerald-600); }
+  .status-dot.amber { background: #f59e0b; }
+  .status-dot.red { background: var(--brand-accent); }
+  .client-meta {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .client-meta .name { font-weight: 600; color: var(--brand-primary); }
+  .client-meta .sub { font-size: 11px; color: var(--stone-500); }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .badge.green { background: var(--emerald-100); color: var(--emerald-800); }
+  .badge.amber { background: #fef3c7; color: #92400e; }
+  .badge.red { background: var(--brand-accent-soft); color: var(--brand-accent); }
+  .badge.neutral { background: var(--stone-100); color: var(--stone-600); }
+  .last-filed { color: var(--stone-600); font-size: 12px; }
+  .open-link {
+    color: var(--brand-accent);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .open-link:hover { text-decoration: underline; }
+
+  .table-footer {
+    padding: 12px 20px;
+    background: var(--stone-50);
+    border-top: 1px solid var(--stone-100);
+    font-size: 12px;
+    color: var(--stone-500);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .table-footer a {
+    color: var(--brand-accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  /* ── Right-rail cards ─────────────────────────────────────── */
+  .rail-card { margin-bottom: 16px; }
+  .deadline-row {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--stone-100);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+  }
+  .deadline-row:last-child { border-bottom: 0; }
+  .deadline-date {
+    flex-shrink: 0;
+    width: 48px;
+    text-align: center;
+    background: var(--stone-50);
+    border-radius: 6px;
+    padding: 6px 0;
+    font-size: 11px;
+    color: var(--stone-700);
+    font-weight: 600;
+  }
+  .deadline-date .day {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--brand-primary);
+    margin-top: -2px;
+  }
+  .deadline-meta { flex: 1; min-width: 0; }
+  .deadline-meta .client { font-weight: 500; color: var(--brand-primary); }
+  .deadline-meta .type { font-size: 11px; color: var(--stone-500); }
+  .deadline-row .urgency {
+    flex-shrink: 0;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+  .urgency.soon { background: var(--brand-accent-soft); color: var(--brand-accent); }
+  .urgency.normal { background: var(--stone-100); color: var(--stone-600); }
+
+  .alert-row {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--stone-100);
+    font-size: 13px;
+  }
+  .alert-row:last-child { border-bottom: 0; }
+  .alert-row .alert-title {
+    font-weight: 500;
+    color: var(--brand-primary);
+    margin-bottom: 4px;
+  }
+  .alert-row .alert-body {
+    font-size: 12px;
+    color: var(--stone-600);
+    line-height: 1.5;
+  }
+
+  /* ── Footer / mockup-context note ────────────────────────── */
+  .mockup-note {
+    margin-top: 60px;
+    padding: 22px 24px;
+    background: #fff;
+    border: 1px dashed var(--stone-300);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--stone-600);
+    line-height: 1.65;
+  }
+  .mockup-note .label {
+    font-size: 10px;
+    color: var(--stone-500);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .mockup-note strong { color: var(--stone-900); font-weight: 600; }
+  .mockup-note code {
+    background: var(--stone-100);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'SF Mono', Menlo, monospace;
+  }
+</style>
+</head>
+<body>
+
+<!-- ────────────────────────────────────────────────────────── -->
+<!-- TOP NAV (white-labeled to fictional Earnscliffe Strategies) -->
+<!-- ────────────────────────────────────────────────────────── -->
+<header class="topnav">
+  <div class="topnav-inner">
+    <div class="agency-brand">
+      <div class="agency-logo">ES</div>
+      <div class="agency-name">
+        Earnscliffe Compliance
+        <span class="sub">· Lobbying Registry Suite</span>
+      </div>
+    </div>
+    <nav>
+      <a href="#" class="active">Portfolio</a>
+      <a href="#">Filings</a>
+      <a href="#">Activity</a>
+      <a href="#">Audit log</a>
+      <a href="#">Settings</a>
+    </nav>
+    <div class="user-chip">
+      <div class="user-avatar">SK</div>
+      <span>Sarah Kowalski</span>
+    </div>
+  </div>
+</header>
+<div class="powered-strip">
+  Powered by <strong>Auto Lobby</strong>
+</div>
+
+<!-- ────────────────────────────────────────────────────────── -->
+<!-- MAIN CONTENT                                                -->
+<!-- ────────────────────────────────────────────────────────── -->
+<main>
+
+  <div class="header-row">
+    <div>
+      <h1>Client Compliance Portfolio</h1>
+      <p class="subtitle">23 active client registrations · April 2026 cycle</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-secondary">Export report</button>
+      <button class="btn btn-primary">+ Add client tenant</button>
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="label">Active clients</div>
+      <div class="value">23</div>
+      <div class="delta good">+2 this quarter</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Drafts pending review</div>
+      <div class="value">8</div>
+      <div class="delta">3 awaiting your input</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Need CEO certification</div>
+      <div class="value">5</div>
+      <div class="delta warn">2 with deadlines &lt; 7 days</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">On-time filing rate · YTD</div>
+      <div class="value">100%</div>
+      <div class="delta good">↑ vs. 96% industry avg</div>
+    </div>
+  </div>
+
+  <!-- Two-column layout -->
+  <div class="layout">
+
+    <!-- ── LEFT: Client list ──────────────────────────────── -->
+    <div>
+      <div class="section-card">
+        <div class="section-header">
+          <h2>Client Status</h2>
+          <div class="filter">
+            <button class="active">All (23)</button>
+            <button>Needs action (5)</button>
+            <button>Drafts (8)</button>
+            <button>Filed (10)</button>
+          </div>
+        </div>
+
+        <div class="client-row">
+          <span class="status-dot green"></span>
+          <div class="client-meta">
+            <span class="name">Deep Sky Climate</span>
+            <span class="sub">3 named lobbyists · Climate, Energy</span>
+          </div>
+          <span><span class="badge green">Active</span></span>
+          <span class="last-filed">May draft ready</span>
+          <a href="#" class="open-link">Open →</a>
+        </div>
+
+        <div class="client-row">
+          <span class="status-dot amber"></span>
+          <div class="client-meta">
+            <span class="name">Shell Canada Limited</span>
+            <span class="sub">8 named lobbyists · Energy, Tax, Environment</span>
+          </div>
+          <span><span class="badge amber">Awaiting cert</span></span>
+          <span class="last-filed">Last filed Mar 31</span>
+          <a href="#" class="open-link">Open →</a>
+        </div>
+
+        <div class="client-row">
+          <span class="status-dot red"></span>
+          <div class="client-meta">
+            <span class="name">ABC Mining Corp</span>
+            <span class="sub">5 named lobbyists · Mining, Tax, Indigenous Affairs</span>
+          </div>
+          <span><span class="badge red">Overdue 3 days</span></span>
+          <span class="last-filed">Last filed Mar 15</span>
+          <a href="#" class="open-link">Open →</a>
+        </div>
+
+        <div class="client-row">
+          <span class="status-dot green"></span>
+          <div class="client-meta">
+            <span class="name">Carbon Removal Canada</span>
+            <span class="sub">2 named lobbyists · Climate, Science</span>
+          </div>
+          <span><span class="badge green">Up to date</span></span>
+          <span class="last-filed">Last filed Apr 30</span>
+          <a href="#" class="open-link">Open →</a>
+        </div>
+
+        <div class="client-row">
+          <span class="status-dot green"></span>
+          <div class="client-meta">
+            <span class="name">University of Calgary</span>
+            <span class="sub">4 named lobbyists · Education, Research, Health</span>
+          </div>
+          <span><span class="badge green">Active</span></span>
+          <span class="last-filed">Last filed Apr 28</span>
+          <a href="#" class="open-link">Open →</a>
+        </div>
+
+        <div class="client-row">
+          <span class="status-dot amber"></span>
+          <div class="client-meta">
+            <span class="name">Pembina Pipeline Corp</span>
+            <span class="sub">11 named lobbyists · Energy, Pipelines, Environment</span>
+          </div>
+          <span><span class="badge amber">Draft pending</span></span>
+          <span class="last-filed">3 meetings need DPOH review</span>
+          <a href="#" class="open-link">Open →</a>
+        </div>
+
+        <div class="client-row">
+          <span class="status-dot green"></span>
+          <div class="client-meta">
+            <span class="name">Canadian Bankers Association</span>
+            <span class="sub">7 named lobbyists · Financial, Tax</span>
+          </div>
+          <span><span class="badge green">Up to date</span></span>
+          <span class="last-filed">Last filed Apr 30</span>
+          <a href="#" class="open-link">Open →</a>
+        </div>
+
+        <div class="client-row">
+          <span class="status-dot green"></span>
+          <div class="client-meta">
+            <span class="name">Enbridge Inc.</span>
+            <span class="sub">14 named lobbyists · Energy, Pipelines, Tax</span>
+          </div>
+          <span><span class="badge green">Up to date</span></span>
+          <span class="last-filed">Last filed Apr 30</span>
+          <a href="#" class="open-link">Open →</a>
+        </div>
+
+        <div class="table-footer">
+          <span>Showing 8 of 23 client tenants</span>
+          <a href="#">View all clients →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT: Rail (deadlines + alerts) ─────────────────── -->
+    <div>
+
+      <div class="section-card rail-card">
+        <div class="section-header">
+          <h2>Upcoming Filing Deadlines</h2>
+        </div>
+        <div class="deadline-row">
+          <div class="deadline-date">MAY<span class="day">3</span></div>
+          <div class="deadline-meta">
+            <div class="client">ABC Mining Corp</div>
+            <div class="type">April MCR · 3 days overdue</div>
+          </div>
+          <span class="urgency soon">Late</span>
+        </div>
+        <div class="deadline-row">
+          <div class="deadline-date">MAY<span class="day">20</span></div>
+          <div class="deadline-meta">
+            <div class="client">Pembina Pipeline Corp</div>
+            <div class="type">April MCR</div>
+          </div>
+          <span class="urgency soon">20d</span>
+        </div>
+        <div class="deadline-row">
+          <div class="deadline-date">MAY<span class="day">31</span></div>
+          <div class="deadline-meta">
+            <div class="client">Shell Canada Limited</div>
+            <div class="type">April MCR · awaiting CEO cert</div>
+          </div>
+          <span class="urgency normal">31d</span>
+        </div>
+        <div class="deadline-row">
+          <div class="deadline-date">JUN<span class="day">1</span></div>
+          <div class="deadline-meta">
+            <div class="client">Deep Sky Climate</div>
+            <div class="type">April MCR · draft ready</div>
+          </div>
+          <span class="urgency normal">32d</span>
+        </div>
+      </div>
+
+      <div class="section-card rail-card">
+        <div class="section-header">
+          <h2>Action Alerts</h2>
+        </div>
+        <div class="alert-row">
+          <div class="alert-title">ABC Mining — overdue April MCR</div>
+          <div class="alert-body">Senior officer unresponsive on certification request (3 follow-ups). Auto-escalation to managing partner triggered.</div>
+        </div>
+        <div class="alert-row">
+          <div class="alert-title">Pembina — 3 meetings need DPOH review</div>
+          <div class="alert-body">Classifier returned <em>needs-info</em> — 3 attendees not in our DPOH registry. Manual review required before draft can finalize.</div>
+        </div>
+        <div class="alert-row">
+          <div class="alert-title">New client onboarding — Cenovus Energy</div>
+          <div class="alert-body">Tenant created last week. CEO not yet invited to certify. <a href="#" style="color: var(--brand-accent);">Send invite →</a></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Mockup context note ──────────────────────────────── -->
+  <div class="mockup-note">
+    <div class="label">Mockup context</div>
+    This is a <strong>white-labeled view</strong> of Auto Lobby's agency dashboard, shown branded as a fictional firm ("Earnscliffe Compliance"). The agency tier sits above multiple client tenants — each client has its own isolated calendar ingestion, DPOH classification, draft MCRs, and CEO certification flow. The agency user (Sarah, in this mockup) can see portfolio-level health and drill into any client's tenant to act on their behalf. <br /><br />
+    <strong>What's white-labeled:</strong> top nav color (<code>--brand-primary</code>), accent color (<code>--brand-accent</code>), agency logo + name, product name in nav. <br />
+    <strong>What's not:</strong> the underlying data model, classification logic, audit trail, and per-tenant isolation are identical to the direct-customer experience. The "Powered by Auto Lobby" footer attribution is configurable per agency contract (default on, optional off for premium tier). <br /><br />
+    See <code>docs/Agency-Motion-Parked.md</code> for the strategic framing and architectural implications. This UI is parked until Phase 4–5 — the architectural decisions to support it (nullable <code>agencyId</code> on Tenant, branding hooks, audit-trail attribution) are non-negotiable from now per CLAUDE.md item #7.
+  </div>
+
+</main>
+
+</body>
+</html>
+</parameter>

@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calendar Confirm UX — mockups · Auto Lobby</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --emerald-50: #ecfdf5;
+    --emerald-100: #d1fae5;
+    --emerald-600: #059669;
+    --emerald-700: #047857;
+    --emerald-800: #065f46;
+    --stone-50: #fafaf9;
+    --stone-100: #f5f5f4;
+    --stone-200: #e7e5e4;
+    --stone-300: #d6d3d1;
+    --stone-400: #a8a29e;
+    --stone-500: #78716c;
+    --stone-600: #57534e;
+    --stone-700: #44403c;
+    --stone-900: #1c1917;
+    --blue-100: #dbeafe;
+    --blue-700: #1d4ed8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--stone-50);
+    color: var(--stone-900);
+    margin: 0;
+    line-height: 1.55;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+  header.page {
+    margin-bottom: 36px;
+  }
+  header.page .pill {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--emerald-100);
+    color: var(--emerald-800);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  header.page h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.02em;
+  }
+  header.page p {
+    font-size: 15px;
+    color: var(--stone-600);
+    max-width: 720px;
+    margin: 0;
+  }
+  .mockup-section {
+    margin-bottom: 56px;
+  }
+  .mockup-section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.01em;
+  }
+  .mockup-section .subtitle {
+    font-size: 14px;
+    color: var(--stone-500);
+    margin: 0 0 18px 0;
+  }
+  .tradeoff-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+  .tag.good { background: var(--emerald-100); color: var(--emerald-800); }
+  .tag.neutral { background: var(--stone-100); color: var(--stone-700); }
+  .tag.warn { background: #fef3c7; color: #92400e; }
+  .mockup-frame {
+    background: #fff;
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+  }
+
+  /* ── Mockup 1: Google Workspace Add-on (sidebar) ─────────────── */
+  .gcal-frame { display: grid; grid-template-columns: 1fr 360px; min-height: 520px; }
+  .gcal-event {
+    padding: 32px 28px;
+    background: #fff;
+    border-right: 1px solid var(--stone-200);
+  }
+  .gcal-event .calendar-chrome {
+    font-size: 11px;
+    color: var(--stone-400);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .gcal-event h3 {
+    font-size: 22px;
+    font-weight: 500;
+    margin: 0 0 6px 0;
+    color: var(--stone-900);
+  }
+  .gcal-event .when {
+    color: var(--stone-600);
+    font-size: 14px;
+    margin-bottom: 22px;
+  }
+  .gcal-event .row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 0;
+    font-size: 13px;
+    color: var(--stone-700);
+    border-bottom: 1px solid var(--stone-100);
+  }
+  .gcal-event .row .icon {
+    width: 16px;
+    color: var(--stone-400);
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .gcal-event .row strong { color: var(--stone-900); font-weight: 500; }
+  .gcal-event .attendee {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--stone-200);
+    color: var(--stone-700);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .avatar.gov { background: var(--emerald-100); color: var(--emerald-800); }
+  .gov-badge {
+    background: var(--emerald-100);
+    color: var(--emerald-800);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    margin-left: 6px;
+  }
+
+  .al-sidebar {
+    background: var(--stone-50);
+    padding: 24px 22px;
+    display: flex;
+    flex-direction: column;
+  }
+  .al-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .al-logo {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--emerald-600), var(--emerald-700));
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 11px;
+  }
+  .al-brand .name { font-weight: 600; font-size: 14px; }
+  .flag-card {
+    background: #fff;
+    border: 1.5px solid var(--emerald-600);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .flag-card .label {
+    font-size: 11px;
+    color: var(--emerald-700);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .flag-card h4 {
+    font-size: 15px;
+    margin: 0 0 12px 0;
+    font-weight: 600;
+  }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--emerald-50);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--emerald-800);
+    font-weight: 500;
+  }
+  .check {
+    width: 18px; height: 18px;
+    background: var(--emerald-700);
+    border-radius: 4px;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .why-section { margin-bottom: 16px; }
+  .why-section .heading {
+    font-size: 11px;
+    color: var(--stone-500);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .why-section ul {
+    margin: 0; padding: 0; list-style: none;
+    font-size: 12px;
+    color: var(--stone-700);
+  }
+  .why-section li { padding: 4px 0; }
+  .why-section li::before {
+    content: "·";
+    color: var(--stone-400);
+    margin-right: 8px;
+  }
+  .subjects-pills {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .subjects-pills .pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--stone-100);
+    color: var(--stone-600);
+    border: 1px solid var(--stone-200);
+  }
+  .subjects-pills .pill.selected {
+    background: var(--emerald-50);
+    color: var(--emerald-800);
+    border-color: var(--emerald-200);
+  }
+
+  /* ── Mockup 2: Outlook task pane (variant) ──────────────────── */
+  .outlook-frame { display: grid; grid-template-columns: 1fr 340px; min-height: 480px; }
+  .outlook-event {
+    padding: 28px 26px;
+    background: #fff;
+    border-right: 1px solid var(--stone-200);
+  }
+  .outlook-chrome {
+    font-size: 11px;
+    color: #0078d4;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .outlook-event h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 6px 0;
+  }
+  .outlook-meta {
+    color: var(--stone-600);
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .outlook-pane {
+    background: #f3f6fa;
+    padding: 20px 18px;
+  }
+  .outlook-pane .al-brand { margin-bottom: 14px; }
+
+  /* ── Mockup 3: Browser extension (DOM injection) ────────────── */
+  .extension-stage {
+    padding: 40px;
+    background: linear-gradient(180deg, #f5f5f4 0%, #fafaf9 100%);
+  }
+  .gcal-popup {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    max-width: 520px;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+  .gcal-popup-header {
+    padding: 18px 22px 0 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .gcal-popup-header .actions {
+    display: flex; gap: 4px;
+  }
+  .gcal-popup-header .actions span {
+    color: var(--stone-400);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+  }
+  .gcal-popup-body { padding: 8px 22px 22px 22px; }
+  .gcal-popup-body h3 {
+    font-size: 19px;
+    font-weight: 500;
+    margin: 0 0 4px 0;
+  }
+  .gcal-popup-body .when {
+    color: var(--stone-600);
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .injected-badge {
+    background: linear-gradient(180deg, var(--emerald-50), #fff);
+    border: 1px solid var(--emerald-200);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 14px 0;
+    position: relative;
+  }
+  .injected-badge .injected-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--emerald-700);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .injected-badge .mini-logo {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    background: var(--emerald-700);
+    color: #fff;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700;
+  }
+  .injected-badge .copy { font-size: 13px; color: var(--stone-700); margin-bottom: 10px; }
+  .injected-badge .button-row { display: flex; gap: 8px; }
+  .btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: var(--emerald-700);
+    color: #fff;
+  }
+  .btn-secondary {
+    background: #fff;
+    color: var(--stone-700);
+    border-color: var(--stone-300);
+  }
+  .btn-link {
+    background: transparent;
+    color: var(--emerald-700);
+    padding: 6px 4px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .gcal-popup .row {
+    display: flex; gap: 12px;
+    align-items: flex-start;
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--stone-700);
+  }
+  .gcal-popup .row .icon { width: 16px; color: var(--stone-400); flex-shrink: 0; }
+
+  /* ── Mockup 4: Slack DM ────────────────────────────────────── */
+  .slack-frame {
+    background: #f8f8f8;
+    padding: 32px;
+    min-height: 420px;
+  }
+  .slack-message {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px 18px;
+    max-width: 600px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .slack-header {
+    display: flex; gap: 10px; align-items: baseline;
+    margin-bottom: 4px;
+  }
+  .slack-header .author { font-weight: 700; font-size: 14px; color: #1d1c1d; }
+  .slack-header .author-app {
+    background: #e8e8e8;
+    font-size: 9px;
+    padding: 1px 4px;
+    border-radius: 2px;
+    color: #616061;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-left: 2px;
+  }
+  .slack-header .ts { color: #616061; font-size: 12px; margin-left: 4px; }
+  .slack-body {
+    display: flex;
+    gap: 12px;
+  }
+  .slack-avatar {
+    width: 36px; height: 36px; border-radius: 4px;
+    background: linear-gradient(135deg, var(--emerald-600), var(--emerald-700));
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px;
+    flex-shrink: 0;
+  }
+  .slack-content { flex: 1; font-size: 14px; color: #1d1c1d; line-height: 1.5; }
+  .slack-content .strong { font-weight: 600; }
+  .slack-callout {
+    background: #f4f4f4;
+    border-left: 3px solid var(--emerald-700);
+    padding: 10px 12px;
+    margin: 10px 0;
+    font-size: 13px;
+    color: var(--stone-700);
+    border-radius: 0 4px 4px 0;
+  }
+  .slack-buttons {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .slack-btn {
+    border: 1px solid #ddd;
+    background: #fff;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .slack-btn.primary {
+    background: var(--emerald-700);
+    color: #fff;
+    border-color: var(--emerald-700);
+  }
+
+  /* ── Footer notes ─────────────────────────────────────────── */
+  .footer-note {
+    margin-top: 60px;
+    padding: 20px 24px;
+    background: #fff;
+    border: 1px solid var(--stone-200);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--stone-600);
+    line-height: 1.6;
+  }
+  .footer-note strong { color: var(--stone-900); font-weight: 600; }
+
+  @media (max-width: 760px) {
+    .gcal-frame, .outlook-frame { grid-template-columns: 1fr; }
+    .gcal-event, .outlook-event { border-right: 0; border-bottom: 1px solid var(--stone-200); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="page">
+    <span class="pill">Parked · Phase 4–5</span>
+    <h1>Calendar Confirm UX — four mockups</h1>
+    <p>Surface Auto Lobby's classification where the meeting actually lives. The attendee — the person who knows the most about the meeting — confirms or corrects in 3 seconds. The CEO certification ritual stays one click per month. See <code>docs/Calendar-Confirm-UX-Parked.md</code> for the strategic framing.</p>
+  </header>
+
+  <!-- ============================================================ -->
+  <!-- Mockup 1: Google Workspace Add-on (sidebar)                  -->
+  <!-- ============================================================ -->
+  <section class="mockup-section">
+    <h2>Option A · Google Workspace Add-on</h2>
+    <p class="subtitle">Sidebar panel that appears when the user opens any event in Google Calendar (web).</p>
+    <div class="tradeoff-row">
+      <span class="tag good">Supported by Google</span>
+      <span class="tag good">Marketplace distribution</span>
+      <span class="tag neutral">Web only · no mobile</span>
+      <span class="tag neutral">Medium build cost</span>
+    </div>
+
+    <div class="mockup-frame gcal-frame">
+      <div class="gcal-event">
+        <div class="calendar-chrome">Google Calendar · Wed, May 6 2026</div>
+        <h3>Coffee with David Vigneault</h3>
+        <div class="when">10:00 AM – 10:30 AM · Climate Café, 100 Sparks St, Ottawa</div>
+
+        <div class="row">
+          <span class="icon">👥</span>
+          <div>
+            <strong>Attendees · 3</strong>
+            <div style="margin-top: 8px;">
+              <div class="attendee">
+                <div class="avatar">JV</div>
+                jason@deepskyclimate.com
+              </div>
+              <div class="attendee">
+                <div class="avatar gov">DV</div>
+                david.vigneault@nrcan-rncan.gc.ca
+                <span class="gov-badge">.gc.ca</span>
+              </div>
+              <div class="attendee">
+                <div class="avatar">MK</div>
+                mike@deepskyclimate.com
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <span class="icon">📍</span>
+          <div>Climate Café, 100 Sparks St</div>
+        </div>
+
+        <div class="row">
+          <span class="icon">📝</span>
+          <div>Quarterly check-in on DAC pilot site selection.</div>
+        </div>
+      </div>
+
+      <aside class="al-sidebar">
+        <div class="al-brand">
+          <div class="al-logo">AL</div>
+          <div class="name">Auto Lobby</div>
+        </div>
+
+        <div class="flag-card">
+          <div class="label">Flagged for review</div>
+          <h4>Looks like a government meeting</h4>
+
+          <div class="toggle-row">
+            <div class="check">✓</div>
+            <div>Confirm — this was lobbying</div>
+          </div>
+
+          <div style="font-size: 12px; color: var(--stone-500); text-align: center;">Click to mark as not lobbying</div>
+        </div>
+
+        <div class="why-section">
+          <div class="heading">Why we flagged it</div>
+          <ul>
+            <li>1 attendee from Natural Resources Canada</li>
+            <li>David Vigneault is a Designated Public Office Holder (Director General, CCUS)</li>
+            <li>30-min in-person meeting, scheduled 8 days in advance</li>
+            <li>Description references "DAC pilot" — registrable subject</li>
+          </ul>
+        </div>
+
+        <div class="why-section">
+          <div class="heading">Subjects (suggested)</div>
+          <div class="subjects-pills">
+            <span class="pill selected">✓ Climate Change</span>
+            <span class="pill selected">✓ Energy</span>
+            <span class="pill">+ Environment</span>
+            <span class="pill">+ Natural Resources</span>
+          </div>
+        </div>
+
+        <div class="why-section">
+          <div class="heading">Status</div>
+          <div style="font-size: 12px; color: var(--stone-700);">Will be drafted into your <strong>May MCR</strong> — pending CEO certification on June 1.</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Mockup 2: Outlook Add-in (variant)                            -->
+  <!-- ============================================================ -->
+  <section class="mockup-section">
+    <h2>Option B · Outlook Add-in</h2>
+    <p class="subtitle">Same pattern as Google's, ported to Microsoft 365. Distributed via AppSource.</p>
+    <div class="tradeoff-row">
+      <span class="tag good">Supported by Microsoft</span>
+      <span class="tag good">AppSource distribution</span>
+      <span class="tag neutral">Web + desktop · partial mobile</span>
+      <span class="tag neutral">Medium build cost</span>
+    </div>
+
+    <div class="mockup-frame outlook-frame">
+      <div class="outlook-event">
+        <div class="outlook-chrome">Outlook · Wed, May 6 2026</div>
+        <h3>CCUS Roundtable — Industry Briefing</h3>
+        <div class="outlook-meta">2:00 PM – 3:00 PM · Microsoft Teams</div>
+
+        <div class="row" style="border-bottom: 1px solid var(--stone-100); padding: 10px 0; display: flex; gap: 12px; font-size: 13px; color: var(--stone-700);">
+          <span style="color: var(--stone-400); width: 16px;">👥</span>
+          <div>
+            <strong style="color: var(--stone-900);">Attendees · 5</strong>
+            <div style="margin-top: 6px; font-size: 12px;">
+              jason@deepskyclimate.com · sarah.chen@ised-isde.gc.ca <span class="gov-badge">.gc.ca</span> · 3 others
+            </div>
+          </div>
+        </div>
+
+        <div class="row" style="padding: 10px 0; display: flex; gap: 12px; font-size: 13px; color: var(--stone-700);">
+          <span style="color: var(--stone-400); width: 16px;">📝</span>
+          <div>Industry briefing on the CCUS Investment Tax Credit consultation. Roundtable format.</div>
+        </div>
+      </div>
+
+      <aside class="outlook-pane">
+        <div class="al-brand">
+          <div class="al-logo">AL</div>
+          <div class="name">Auto Lobby</div>
+        </div>
+
+        <div class="flag-card" style="border-color: #ffc107; background: #fffaf0;">
+          <div class="label" style="color: #b45309;">Needs your input</div>
+          <h4>Is this lobbying?</h4>
+          <p style="font-size: 13px; color: var(--stone-700); margin: 0 0 12px 0;">Public consultations are <em>not</em> reportable lobbying under the Act. But "industry briefing" is ambiguous — please confirm.</p>
+
+          <div class="button-row" style="display: flex; gap: 6px;">
+            <button class="btn btn-primary">Yes, lobbying</button>
+            <button class="btn btn-secondary">No, consultation</button>
+          </div>
+        </div>
+
+        <div class="why-section">
+          <div class="heading">Why we're asking</div>
+          <ul>
+            <li>Listed attendee from ISED (DPOH)</li>
+            <li>Subject matter is a registrable topic</li>
+            <li>But: format is "roundtable" / "consultation"</li>
+            <li>Anti-over-reporting rule: defaults to exclusion</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Mockup 3: Browser extension (DOM injection)                  -->
+  <!-- ============================================================ -->
+  <section class="mockup-section">
+    <h2>Option C · Browser extension</h2>
+    <p class="subtitle">Injects a small Auto Lobby badge into the existing event detail popup. Looks native — most "in-event" of any option.</p>
+    <div class="tradeoff-row">
+      <span class="tag good">Lowest build cost</span>
+      <span class="tag good">Best visual fidelity</span>
+      <span class="tag warn">Fragile · breaks if Google ships UI changes</span>
+      <span class="tag warn">Manual install · no mobile</span>
+    </div>
+
+    <div class="mockup-frame extension-stage">
+      <div class="gcal-popup">
+        <div class="gcal-popup-header">
+          <div></div>
+          <div class="actions">
+            <span>📋</span><span>📨</span><span>×</span>
+          </div>
+        </div>
+        <div class="gcal-popup-body">
+          <h3>Coffee with David Vigneault</h3>
+          <div class="when">Wednesday, May 6 · 10:00 – 10:30 AM</div>
+
+          <div class="injected-badge">
+            <div class="injected-label">
+              <div class="mini-logo">AL</div>
+              Auto Lobby flagged this
+            </div>
+            <div class="copy">Looks like a <strong>government meeting</strong> with David Vigneault (NRCan, DPOH).</div>
+            <div class="button-row">
+              <button class="btn btn-primary">✓ Confirm</button>
+              <button class="btn btn-secondary">Not government</button>
+              <button class="btn btn-link">Why?</button>
+            </div>
+          </div>
+
+          <div class="row">
+            <span class="icon">📍</span>
+            <div>Climate Café, 100 Sparks St, Ottawa</div>
+          </div>
+          <div class="row">
+            <span class="icon">👥</span>
+            <div>3 guests · jason@deepskyclimate.com, david.vigneault@nrcan-rncan.gc.ca, mike@deepskyclimate.com</div>
+          </div>
+          <div class="row">
+            <span class="icon">📝</span>
+            <div>Quarterly check-in on DAC pilot site selection.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Mockup 4: Pre-meeting Slack DM                                -->
+  <!-- ============================================================ -->
+  <section class="mockup-section">
+    <h2>Option D · Pre-meeting Slack DM</h2>
+    <p class="subtitle">10 minutes before the meeting, Auto Lobby messages the attendee. Works for every calendar app — no integration needed.</p>
+    <div class="tradeoff-row">
+      <span class="tag good">Lowest build cost · ship in days</span>
+      <span class="tag good">Works on mobile</span>
+      <span class="tag good">Works for any calendar app</span>
+      <span class="tag neutral">Less in-the-moment than calendar UI</span>
+    </div>
+
+    <div class="mockup-frame slack-frame">
+      <div class="slack-message">
+        <div class="slack-body">
+          <div class="slack-avatar">AL</div>
+          <div class="slack-content">
+            <div class="slack-header">
+              <span class="author">Auto Lobby</span>
+              <span class="author-app">App</span>
+              <span class="ts">9:50 AM</span>
+            </div>
+
+            <div>Heads up — your <span class="strong">10:00 AM with David Vigneault</span> looks like a government meeting.</div>
+
+            <div class="slack-callout">
+              <div style="margin-bottom: 4px;"><strong>Why we flagged it:</strong></div>
+              David Vigneault is a Designated Public Office Holder at Natural Resources Canada (Director General, CCUS). The meeting subject references "DAC pilot" — a registrable topic.
+            </div>
+
+            <div>If this is right, we'll add it to your <strong>May Monthly Communication Report</strong>. Mike will see the same draft for CEO certification on June 1.</div>
+
+            <div class="slack-buttons">
+              <button class="slack-btn primary">✓ Yes, government meeting</button>
+              <button class="slack-btn">Not lobbying — exclude</button>
+              <button class="slack-btn">More options…</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Footer note                                                    -->
+  <!-- ============================================================ -->
+  <div class="footer-note">
+    <strong>Recommended sequencing:</strong> ship Option D (Slack DM) first — lowest cost, works everywhere, fastest learning loop. Use the confirmation/correction data from real users to inform whether Option A (Google Workspace Add-on) is worth the build effort. Option C (browser extension) is the fallback if Marketplace approval drags. Option B (Outlook Add-in) follows whichever Google path lands.
+    <br /><br />
+    <strong>What this is not:</strong> a replacement for the once-monthly CEO certification. The senior officer's batched attestation is a legal requirement of the Lobbying Act — this UX is for the <em>attendee</em> (not the certifier), and it serves to raise classifier confidence and reduce false positives by the time the CEO sees the batch.
+  </div>
+
+</div>
+</body>
+</html>

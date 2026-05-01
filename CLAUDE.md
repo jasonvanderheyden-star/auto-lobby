@@ -21,6 +21,8 @@ Parked ideas (don't build, but check before making structural decisions that mig
 
 - `docs/Naming-Parked.md` — product name decision (resume after Phase 0 ships green)
 - `docs/Gov-Platform-Parked.md` — potential second product for commissioner's offices (resume after ≥3 paying federal customers)
+- `docs/Agency-Motion-Parked.md` — GR-firm / law-firm white-label GTM motion (architectural implications are *not* parked — see non-negotiable #7 below)
+- `docs/Calendar-Confirm-UX-Parked.md` — per-meeting attendee confirmation in the calendar app itself (Phase 4–5)
 
 Build React components that match the prototypes visually. Inter font, emerald-700 accent, stone neutral palette, generous whitespace.
 
@@ -34,6 +36,7 @@ Never design around these.
 4. **Explainable auto-decisions.** Every classification and pre-filled field carries provenance. The UI always shows *why*.
 5. **Anti-over-reporting bias.** Domain match ≠ DPOH; DPOH ≠ reportable lobbying. Default to exclusion on low-confidence signals. Public consultations, procurement Q&A, and routine program inquiries are never auto-reported.
 6. **Canadian data residency.** Everything in Canadian regions from day one. PIPEDA-compliant.
+7. **Architect for both direct and agency GTM from day one.** Auto Lobby supports two go-to-market motions: direct (in-house GR teams at corporates) and agency (GR firms / law firms managing client portfolios under white-label). Don't build the agency UI yet, but never make a schema, permission, or audit decision that forecloses it. Concretely: `Tenant` carries a nullable `agencyId` foreign key, tenant-level branding hooks (`logoUrl`, `brandColor`, `productName`, `supportEmail`) are nullable but rendered through variables, and `AuditEvent` attribution supports "actor + actor_role + on_behalf_of_tenant." See `docs/Agency-Motion-Parked.md` for the full motion plan.
 
 ## Tech stack (decided — don't revisit without explicit reason)
 
