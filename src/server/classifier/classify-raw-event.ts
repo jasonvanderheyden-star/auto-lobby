@@ -1,5 +1,9 @@
 import { db } from "@/lib/db";
-import { resolveAttendees } from "@/server/dpoh-registry/resolve-attendee";
+import {
+  resolveAttendee,
+  resolveAttendees,
+  type ResolverContext,
+} from "@/server/dpoh-registry/resolve-attendee";
 import { classifyMeeting, type ClassificationResult } from "./classify-meeting";
 
 export interface ClassifyEventResult {
@@ -14,8 +18,15 @@ export interface ClassifyEventResult {
 /**
  * Classify a single RawCalendarEvent. Idempotent — re-running replaces
  * the existing DetectedMeeting row's reasons + attendees cleanly.
+ *
+ * Pass a pre-built `ctx` to avoid rebuilding the resolver context on every
+ * call (important for backfill loops — build once with buildResolverContext,
+ * then pass it through for all events in the batch).
  */
-export async function classifyRawEvent(rawEventId: string): Promise<ClassifyEventResult> {
+export async function classifyRawEvent(
+  rawEventId: string,
+  ctx?: ResolverContext,
+): Promise<ClassifyEventResult> {
   const event = await db.rawCalendarEvent.findUniqueOrThrow({
     where: { id: rawEventId },
     select: {
@@ -32,7 +43,9 @@ export async function classifyRawEvent(rawEventId: string): Promise<ClassifyEven
     email: string | null;
     displayName: string | null;
   }>;
-  const resolutions = await resolveAttendees(event.tenantId, attendeesArr);
+  const resolutions = ctx
+    ? await Promise.all(attendeesArr.map((a) => resolveAttendee(a, ctx)))
+    : await resolveAttendees(event.tenantId, attendeesArr);
 
   const result = classifyMeeting(
     { title: event.title, startsAt: event.startsAt, endsAt: event.endsAt },

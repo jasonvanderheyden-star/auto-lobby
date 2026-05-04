@@ -174,7 +174,8 @@ model InstitutionRegistry {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  officials PublicOfficial[]
+  officials        PublicOfficial[]
+  detectedMeetings DetectedMeeting[]
 
   @@index([domains])
 }
@@ -214,6 +215,7 @@ model DetectedMeeting {
   endAt                    DateTime
   employeeEmail            String
   institutionId            String?
+  institution              InstitutionRegistry? @relation(fields: [institutionId], references: [id])
   hadDpoh                  Boolean          @default(false)
   classification           String // lobbying | not-lobbying | needs-info
   classificationConfidence Float
