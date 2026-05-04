@@ -38,6 +38,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { extractDpohsFromOcl } from "../src/server/dpoh-registry/extract-from-ocl";
 
 const db = new PrismaClient();
 
@@ -345,6 +346,19 @@ async function main() {
 
   console.log(`\n──────────────────────────────────────────────────────────────────`);
   console.log(`  Created: ${created}  Updated: ${updated}  Total federal rows: ${total}`);
+  console.log(`──────────────────────────────────────────────────────────────────\n`);
+
+  // Phase 2 — populate PublicOfficial from OclPublicCommReport
+  const dpohResult = await extractDpohsFromOcl();
+  console.log(`──────────────────────────────────────────────────────────────────`);
+  console.log(`  DPOHs created: ${dpohResult.dpohsCreated}`);
+  console.log(`  Institutions auto-grown: ${dpohResult.institutionsAutoCreated}`);
+  console.log(`  Total institutions now: ${dpohResult.totalInstitutions}`);
+  console.log(`  Total public officials now: ${dpohResult.totalPublicOfficials}`);
+  if (dpohResult.institutionsAutoCreatedNames.length > 0) {
+    console.log(`\n  First auto-grown institution names:`);
+    for (const n of dpohResult.institutionsAutoCreatedNames) console.log(`    - ${n}`);
+  }
   console.log(`──────────────────────────────────────────────────────────────────\n`);
 }
 
