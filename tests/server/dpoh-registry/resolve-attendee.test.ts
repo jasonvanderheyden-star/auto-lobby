@@ -32,12 +32,13 @@ describe("resolveAttendee", () => {
     expect(r.institutionId).toBeNull();
   });
 
-  it("matches DPOH-source institution by domain (presumed)", async () => {
+  it("matches DPOH-source institution by domain but leaves isDpoh unknown", async () => {
     const r = await resolveAttendee({ email: "someone@ec.gc.ca", displayName: "Some One" }, makeCtx());
-    expect(r.signal).toBe("gov-presumed-dpoh");
+    expect(r.signal).toBe("gov-attendee-unknown-role");
     expect(r.institutionAcronym).toBe("ECCC");
-    expect(r.isDpoh).toBe(true);
+    expect(r.isDpoh).toBeNull();
     expect(r.dpohMatchedBy).toBe("institution-domain-fallback");
+    expect(r.confidence).toBe(0.3);
   });
 
   it("flags non-DPOH-source institution", async () => {
@@ -77,6 +78,20 @@ describe("resolveAttendee", () => {
     const r = await resolveAttendee({ email: "j.moffet@ec.gc.ca", displayName: "John Moffet" }, ctx);
     expect(r.signal).toBe("gov-with-named-dpoh");
     expect(r.dpohMatchedBy).toBe("name-exact-at-institution");
+  });
+
+  it("does NOT presume DPOH on institution-domain match alone (Kay Powe scenario)", async () => {
+    // Junior or non-designated staff at a DPOH-source institution must not be
+    // auto-flagged as DPOH. Anti-over-reporting per CLAUDE.md non-negotiable #5.
+    const r = await resolveAttendee(
+      { email: "kay.powe@ec.gc.ca", displayName: "Kay Powe" },
+      makeCtx(),
+    );
+    expect(r.signal).toBe("gov-attendee-unknown-role");
+    expect(r.institutionAcronym).toBe("ECCC");
+    expect(r.isDpoh).toBeNull();
+    expect(r.dpohMatchedBy).toBe("institution-domain-fallback");
+    expect(r.confidence).toBeLessThan(0.5);
   });
 
   it("handles null email gracefully", async () => {

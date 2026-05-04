@@ -11,7 +11,7 @@ export type ResolutionSignal =
   | "internal"
   | "external-non-gov"
   | "gov-with-named-dpoh"
-  | "gov-presumed-dpoh"
+  | "gov-attendee-unknown-role"
   | "gov-not-dpoh-source"
   | "gov-unresolved";
 
@@ -145,7 +145,11 @@ export async function resolveAttendee(
     };
   }
 
-  // 4. Institution-level fallback
+  // 4. Institution-level: attendee is at a federal institution but not a known DPOH.
+  //    Per CLAUDE.md non-negotiable #5 (anti-over-reporting bias): "Domain match ≠ DPOH".
+  //    Most federal employees are NOT DPOHs — only those holding designated positions
+  //    (Cabinet, MPs, Senators, DMs, ADMs, etc.) are. We do not have evidence this
+  //    person holds a designated role, so we mark unknown and surface for human review.
   if (inst.isDpohSource) {
     return {
       email,
@@ -157,12 +161,12 @@ export async function resolveAttendee(
       resolvedOfficialId: null,
       resolvedOfficialName: null,
       resolvedOfficialRole: null,
-      isDpoh: true,
-      dpohBasis: "institution-domain-fallback",
-      dpohRuleRef: `${inst.name} is a DPOH-source institution; specific person not in registry`,
+      isDpoh: null,
+      dpohBasis: null,
+      dpohRuleRef: null,
       dpohMatchedBy: "institution-domain-fallback",
-      confidence: 0.5,
-      signal: "gov-presumed-dpoh",
+      confidence: 0.3,
+      signal: "gov-attendee-unknown-role",
     };
   }
 
