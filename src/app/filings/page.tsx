@@ -28,7 +28,7 @@ export default async function FilingsPage() {
     include: {
       meeting: {
         include: {
-          attendees: { orderBy: { isDpoh: "desc" } },
+          attendees: true,
           reasons: true,
           institution: { select: { name: true, acronym: true } },
         },
