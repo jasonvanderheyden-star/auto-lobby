@@ -4,6 +4,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getTenantContext } from "@/server/tenant/context";
 import { FilingRow } from "./_components/FilingRow";
+import { certifyBatchAction } from "./_actions";
 
 const DEFAULT_SUBJECTS_FOR_DEEP_SKY = [
   "Environment",
@@ -117,13 +118,16 @@ export default async function FilingsPage() {
               </p>
 
               <div className="flex items-center gap-3 mt-5">
-                <button
-                  className="text-[15px] px-5 py-2.5 rounded-lg bg-emerald-700 text-white font-semibold hover:bg-emerald-800 shadow-sm disabled:opacity-40 disabled:hover:bg-emerald-700"
-                  disabled={lobbyingCount === 0}
-                  title={lobbyingCount === 0 ? "No lobbying meetings to certify" : "Certify and submit all"}
-                >
-                  Certify &amp; submit {lobbyingCount} →
-                </button>
+                <form action={certifyBatchAction}>
+                  <button
+                    type="submit"
+                    className="text-[15px] px-5 py-2.5 rounded-lg bg-emerald-700 text-white font-semibold hover:bg-emerald-800 shadow-sm disabled:opacity-40 disabled:hover:bg-emerald-700"
+                    disabled={lobbyingCount === 0}
+                    title={lobbyingCount === 0 ? "No lobbying meetings to certify" : "Certify and submit all (stub — LRS submission lands in Phase 4)"}
+                  >
+                    Certify &amp; submit {lobbyingCount} →
+                  </button>
+                </form>
                 <button className="text-sm px-4 py-2.5 rounded-lg border border-stone-200 hover:bg-stone-50">
                   Review individually first
                 </button>

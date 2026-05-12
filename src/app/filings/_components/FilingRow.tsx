@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { confirmDpohAction, excludeMeetingAction } from "../_actions";
 
 type Attendee = {
   id: string;
@@ -143,22 +144,37 @@ export function FilingRow({ draft }: { draft: Draft }) {
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-end gap-2">
-            <button
-              className="text-xs px-2.5 py-1 rounded-md border border-stone-200 hover:bg-white disabled:opacity-50"
-              disabled
-              title="Coming in Chunk 3c"
-            >
-              Edit
-            </button>
-            <button
-              className="text-xs px-2.5 py-1 rounded-md border border-stone-200 hover:bg-white disabled:opacity-50"
-              disabled
-              title="Coming in Chunk 3c"
-            >
-              {isLobbying ? "Exclude from filing" : "Confirm — mark as DPOH"}
-            </button>
-          </div>
+          {(() => {
+            const candidateGovAttendee = m.attendees.find(
+              (a) => !a.isInternal && a.email && /\.(gc|parl)\.ca$/i.test(a.email) && a.isDpoh !== true,
+            );
+
+            return (
+              <div className="mt-4 flex items-center justify-end gap-2">
+                {!isLobbying && candidateGovAttendee && (
+                  <form action={confirmDpohAction}>
+                    <input type="hidden" name="meetingId" value={m.id} />
+                    <input type="hidden" name="attendeeEmail" value={candidateGovAttendee.email} />
+                    <button
+                      type="submit"
+                      className="text-xs px-3 py-1.5 rounded-md bg-emerald-700 text-white font-medium hover:bg-emerald-800"
+                    >
+                      Confirm — {candidateGovAttendee.name} is a DPOH
+                    </button>
+                  </form>
+                )}
+                <form action={excludeMeetingAction}>
+                  <input type="hidden" name="meetingId" value={m.id} />
+                  <button
+                    type="submit"
+                    className="text-xs px-3 py-1.5 rounded-md border border-stone-200 hover:bg-white text-stone-700"
+                  >
+                    {isLobbying ? "Exclude from filing" : "Not lobbying — exclude"}
+                  </button>
+                </form>
+              </div>
+            );
+          })()}
         </div>
       )}
     </li>
