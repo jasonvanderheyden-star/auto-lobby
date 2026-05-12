@@ -1,7 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { confirmDpohAction, excludeMeetingAction } from "../_actions";
+
+function SubmitButton({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" disabled={pending} className={className}>
+      {pending ? "Saving…" : children}
+    </button>
+  );
+}
 
 type Attendee = {
   id: string;
@@ -188,22 +204,23 @@ export function FilingRow({ draft }: { draft: Draft }) {
                   <form action={confirmDpohAction}>
                     <input type="hidden" name="meetingId" value={m.id} />
                     <input type="hidden" name="attendeeEmail" value={candidateGovAttendee.email} />
-                    <button
-                      type="submit"
-                      className="text-xs px-3 py-1.5 rounded-md bg-emerald-700 text-white font-medium hover:bg-emerald-800"
-                    >
+                    <SubmitButton className="text-xs px-3 py-1.5 rounded-md bg-emerald-700 text-white font-medium hover:bg-emerald-800 disabled:opacity-50">
                       Confirm — {candidateGovAttendee.name} is a DPOH
-                    </button>
+                    </SubmitButton>
                   </form>
                 )}
                 <form action={excludeMeetingAction}>
                   <input type="hidden" name="meetingId" value={m.id} />
-                  <button
-                    type="submit"
-                    className="text-xs px-3 py-1.5 rounded-md border border-stone-200 hover:bg-white text-stone-700"
-                  >
-                    {isLobbying ? "Exclude from filing" : "Not lobbying — exclude"}
-                  </button>
+                  {!isLobbying && candidateGovAttendee && (
+                    <input type="hidden" name="attendeeEmail" value={candidateGovAttendee.email} />
+                  )}
+                  <SubmitButton className="text-xs px-3 py-1.5 rounded-md border border-stone-200 hover:bg-white text-stone-700 disabled:opacity-50">
+                    {isLobbying
+                      ? "Exclude from filing"
+                      : candidateGovAttendee
+                        ? `Not a DPOH — ${candidateGovAttendee.name} (apply to all meetings)`
+                        : "Not lobbying — exclude"}
+                  </SubmitButton>
                 </form>
               </div>
             );

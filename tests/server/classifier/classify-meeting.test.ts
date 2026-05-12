@@ -103,6 +103,20 @@ describe("classifyMeeting", () => {
     expect(r.verdict).toBe("not-lobbying");
   });
 
+  it("not-lobbying when only attendees are confirmed non-DPOHs (Kay Powe scenario)", () => {
+    const r = classifyMeeting(meeting(), [
+      att({ signal: "internal", isInternal: true }),
+      att({
+        signal: "gov-with-named-non-dpoh",
+        isDpoh: false,
+        resolvedOfficialName: "Kay Powe",
+        institutionAcronym: "NRCAN",
+      }),
+    ]);
+    expect(r.verdict).toBe("not-lobbying");
+    expect(r.hadDpoh).toBe(false);
+  });
+
   it("writes provenance reasons for every signal", () => {
     const r = classifyMeeting(meeting(), [
       att({ signal: "internal", isInternal: true }),

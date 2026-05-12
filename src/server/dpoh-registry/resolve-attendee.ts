@@ -11,6 +11,7 @@ export type ResolutionSignal =
   | "internal"
   | "external-non-gov"
   | "gov-with-named-dpoh"
+  | "gov-with-named-non-dpoh"
   | "gov-attendee-unknown-role"
   | "gov-not-dpoh-source"
   | "gov-unresolved";
@@ -141,7 +142,7 @@ export async function resolveAttendee(
       dpohRuleRef: official.ruleRef,
       dpohMatchedBy: matchedBy,
       confidence: official.confidence,
-      signal: official.isDpoh ? "gov-with-named-dpoh" : "gov-not-dpoh-source",
+      signal: official.isDpoh ? "gov-with-named-dpoh" : "gov-with-named-non-dpoh",
     };
   }
 

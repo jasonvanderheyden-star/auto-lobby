@@ -105,29 +105,115 @@ export async function excludeMeetingAction(formData: FormData) {
   if (!ctx) throw new Error("No tenant");
 
   const meetingId = formData.get("meetingId");
+  const attendeeEmail = formData.get("attendeeEmail");
   if (typeof meetingId !== "string") throw new Error("Missing meetingId");
 
-  // Verify ownership
   const meeting = await db.detectedMeeting.findFirst({
     where: { id: meetingId, tenantId: ctx.tenantId },
-    select: { id: true },
+    select: { id: true, classification: true, institutionId: true },
   });
   if (!meeting) throw new Error("Meeting not found");
 
-  await db.detectedMeeting.update({
-    where: { id: meetingId },
-    data: { classification: "not-lobbying", status: "excluded" },
+  // If this is a lobbying row OR no attendeeEmail was given, just exclude this one meeting.
+  if (meeting.classification === "lobbying" || typeof attendeeEmail !== "string" || !attendeeEmail) {
+    await db.detectedMeeting.update({
+      where: { id: meetingId },
+      data: { status: "excluded" },
+    });
+    await db.draftMcr.deleteMany({ where: { meetingId } });
+    await db.auditEvent.create({
+      data: {
+        tenantId: ctx.tenantId,
+        actor: userId,
+        action: "meeting-excluded",
+        subject: meetingId,
+        payload: { scope: "single", reason: "user-marked-not-lobbying" },
+      },
+    });
+    revalidatePath("/filings");
+    return;
+  }
+
+  // Needs-info path: write a negative confirmation for the attendee, then cascade.
+  const attendee = await db.meetingAttendee.findFirst({
+    where: {
+      meeting: { id: meetingId, tenantId: ctx.tenantId },
+      email: attendeeEmail,
+    },
+  });
+  if (!attendee) throw new Error("Attendee not found");
+  if (!meeting.institutionId) throw new Error("Meeting has no institution");
+
+  // Upsert PublicOfficial with isDpoh=false
+  let officialId: string;
+  const existing = await db.publicOfficial.findFirst({
+    where: {
+      name: { equals: attendee.name, mode: "insensitive" },
+      institutionId: meeting.institutionId,
+    },
+  });
+  if (existing) {
+    await db.publicOfficial.update({
+      where: { id: existing.id },
+      data: {
+        email: attendeeEmail,
+        isDpoh: false,
+        dpohBasis: null,
+        ruleRef: "User-confirmed not a DPOH",
+        resolvedFrom: "manual",
+        confidence: 1.0,
+      },
+    });
+    officialId = existing.id;
+  } else {
+    const created = await db.publicOfficial.create({
+      data: {
+        name: attendee.name,
+        email: attendeeEmail,
+        institutionId: meeting.institutionId,
+        role: "User-marked not-DPOH",
+        isDpoh: false,
+        dpohBasis: null,
+        ruleRef: "User-confirmed not a DPOH",
+        resolvedFrom: "manual",
+        confidence: 1.0,
+        effectiveFrom: new Date(),
+      },
+    });
+    officialId = created.id;
+  }
+
+  // Cascade: re-classify every meeting where this email appears
+  const affected = await db.detectedMeeting.findMany({
+    where: {
+      tenantId: ctx.tenantId,
+      attendees: { some: { email: attendeeEmail } },
+    },
+    select: { id: true, rawEventId: true },
   });
 
-  await db.draftMcr.deleteMany({ where: { meetingId } });
+  const resolverCtx = await buildResolverContext(ctx.tenantId);
+  for (const m of affected) {
+    await classifyRawEvent(m.rawEventId, resolverCtx);
+    // After reclassify, only generate DraftMcr if still needed; otherwise drop it
+    const after = await db.detectedMeeting.findUniqueOrThrow({
+      where: { id: m.id },
+      select: { classification: true },
+    });
+    if (after.classification === "lobbying" || after.classification === "needs-info") {
+      await generateDraftMcr(m.id);
+    } else {
+      await db.draftMcr.deleteMany({ where: { meetingId: m.id } });
+    }
+  }
 
   await db.auditEvent.create({
     data: {
       tenantId: ctx.tenantId,
       actor: userId,
-      action: "meeting-excluded",
-      subject: meetingId,
-      payload: { reason: "user-marked-not-lobbying" },
+      action: "non-dpoh-confirmed",
+      subject: officialId,
+      payload: { meetingId, attendeeEmail, affectedMeetings: affected.length },
     },
   });
 

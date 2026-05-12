@@ -44,6 +44,7 @@ export function classifyMeeting(
 
   const internal = resolutions.filter((r) => r.isInternal);
   const namedDpohs = resolutions.filter((r) => r.signal === "gov-with-named-dpoh");
+  const namedNonDpohs = resolutions.filter((r) => r.signal === "gov-with-named-non-dpoh");
   const unknownGovs = resolutions.filter((r) => r.signal === "gov-attendee-unknown-role");
   const govNotDpoh = resolutions.filter((r) => r.signal === "gov-not-dpoh-source");
   const govUnresolved = resolutions.filter((r) => r.signal === "gov-unresolved");
@@ -66,7 +67,12 @@ export function classifyMeeting(
   });
 
   // Rule 2: must have a federal gov attendee
-  const govCount = namedDpohs.length + unknownGovs.length + govNotDpoh.length + govUnresolved.length;
+  const govCount =
+    namedDpohs.length +
+    namedNonDpohs.length +
+    unknownGovs.length +
+    govNotDpoh.length +
+    govUnresolved.length;
   if (govCount === 0) {
     reasons.push({
       ok: false,
@@ -145,6 +151,19 @@ export function classifyMeeting(
       weight: 1.0,
     });
     return { verdict: "needs-info", confidence: 0.4, hadDpoh: false, reasons };
+  }
+
+  if (namedNonDpohs.length > 0) {
+    const list = namedNonDpohs
+      .map((n) => `${n.resolvedOfficialName} (${n.institutionAcronym ?? n.institutionName})`)
+      .join(", ");
+    reasons.push({
+      ok: false,
+      text: `Federal attendee(s) explicitly marked as non-DPOH by user: ${list}. Not reportable lobbying on the basis of these attendees.`,
+      citation: "User-confirmed not-DPOH classification",
+      weight: 1.0,
+    });
+    return { verdict: "not-lobbying", confidence: 0.9, hadDpoh: false, reasons };
   }
 
   if (govNotDpoh.length > 0) {
