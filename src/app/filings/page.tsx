@@ -62,6 +62,43 @@ export default async function FilingsPage() {
   const lobbyingCount = drafts.filter((d) => d.meeting.classification === "lobbying").length;
   const needsInfoCount = drafts.filter((d) => d.meeting.classification === "needs-info").length;
 
+  // Build a map of email -> potential role hints from OCL historical data.
+  // Only fires for needs-info gov attendees where name matches a known PublicOfficial.
+  type RoleHint = { role: string; isDpoh: boolean };
+  const roleHints: Record<string, RoleHint[]> = {};
+
+  const uniqueGovAttendees = new Map<string, { name: string; institutionId: string | null }>();
+  for (const d of drafts) {
+    if (d.meeting.classification !== "needs-info") continue;
+    for (const a of d.meeting.attendees) {
+      if (a.isInternal || !a.email) continue;
+      if (!/\.(gc|parl)\.ca$/i.test(a.email)) continue;
+      if (!uniqueGovAttendees.has(a.email)) {
+        uniqueGovAttendees.set(a.email, { name: a.name, institutionId: d.meeting.institutionId });
+      }
+    }
+  }
+
+  for (const [email, { name, institutionId }] of uniqueGovAttendees) {
+    if (!institutionId) continue;
+    const matches = await db.publicOfficial.findMany({
+      where: {
+        name: { equals: name, mode: "insensitive" },
+        institutionId,
+      },
+      select: { role: true, isDpoh: true },
+      take: 5,
+    });
+    if (matches.length > 0) {
+      const seen = new Set<string>();
+      roleHints[email] = matches.filter((m) => {
+        if (seen.has(m.role)) return false;
+        seen.add(m.role);
+        return true;
+      });
+    }
+  }
+
   const totalFields = drafts.length * 4;
   let highConfidenceFields = 0;
   for (const d of drafts) {
@@ -229,7 +266,11 @@ export default async function FilingsPage() {
           ) : (
             <ul className="divide-y divide-stone-100">
               {drafts.map((d) => (
-                <FilingRow key={d.id} draft={JSON.parse(JSON.stringify(d))} />
+                <FilingRow
+                  key={d.id}
+                  draft={JSON.parse(JSON.stringify(d))}
+                  roleHints={roleHints}
+                />
               ))}
             </ul>
           )}

@@ -35,6 +35,8 @@ type Reason = {
 type Institution = { name: string; acronym: string | null } | null;
 type Subject = { subjectId: string; source: string };
 
+type RoleHint = { role: string; isDpoh: boolean };
+
 interface Draft {
   id: string;
   subjects: Subject[];
@@ -50,7 +52,13 @@ interface Draft {
   };
 }
 
-export function FilingRow({ draft }: { draft: Draft }) {
+export function FilingRow({
+  draft,
+  roleHints = {},
+}: {
+  draft: Draft;
+  roleHints?: Record<string, RoleHint[]>;
+}) {
   const [expanded, setExpanded] = useState(false);
   const m = draft.meeting;
   const isLobbying = m.classification === "lobbying";
@@ -113,27 +121,46 @@ export function FilingRow({ draft }: { draft: Draft }) {
 
                   {priority.length > 0 && (
                     <div className="space-y-1 mb-3">
-                      {priority.map((a) => (
-                        <div key={a.id} className="flex items-center gap-2 text-sm flex-wrap">
-                          {a.isDpoh === true && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-200 rounded">
-                              DPOH
-                            </span>
-                          )}
-                          {!a.isDpoh && isGovAttendee(a) && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded">
-                              gov
-                            </span>
-                          )}
-                          {a.isInternal && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-stone-100 text-stone-700 border border-stone-200 rounded">
-                              internal
-                            </span>
-                          )}
-                          <span className="text-stone-900">{a.name}</span>
-                          <span className="text-stone-500 text-xs">{a.email}</span>
-                        </div>
-                      ))}
+                      {priority.map((a) => {
+                        const hints = a.email ? roleHints[a.email] : undefined;
+                        return (
+                          <div key={a.id} className="text-sm">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {a.isDpoh === true && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-200 rounded">
+                                  DPOH
+                                </span>
+                              )}
+                              {!a.isDpoh && isGovAttendee(a) && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded">
+                                  gov
+                                </span>
+                              )}
+                              {a.isInternal && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-stone-100 text-stone-700 border border-stone-200 rounded">
+                                  internal
+                                </span>
+                              )}
+                              <span className="text-stone-900">{a.name}</span>
+                              <span className="text-stone-500 text-xs">{a.email}</span>
+                            </div>
+                            {hints && hints.length > 0 && (
+                              <div className="ml-1 mt-0.5 text-[11px] text-stone-500">
+                                <span className="text-stone-400">OCL history:</span>{" "}
+                                {hints.map((h, i) => (
+                                  <span key={i}>
+                                    {i > 0 && "; "}
+                                    {h.role}
+                                    {h.isDpoh && (
+                                      <span className="ml-1 text-[10px] font-semibold text-amber-700">DPOH</span>
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
