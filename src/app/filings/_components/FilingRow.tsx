@@ -82,30 +82,63 @@ export function FilingRow({ draft }: { draft: Draft }) {
             <Field label="Institution" value={m.institution?.name ?? "(unknown)"} />
             <Field label="Date" value={date.toISOString().slice(0, 10)} />
 
-            <div className="col-span-2">
-              <FieldLabel>Attendees</FieldLabel>
-              <div className="space-y-1">
-                {m.attendees.length === 0 && (
-                  <div className="text-xs text-stone-400">(no attendees on this event)</div>
-                )}
-                {m.attendees.map((a) => (
-                  <div key={a.id} className="flex items-center gap-2 text-sm flex-wrap">
-                    {a.isDpoh === true && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-200 rounded">
-                        DPOH
-                      </span>
-                    )}
-                    {a.isInternal && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-stone-100 text-stone-700 border border-stone-200 rounded">
-                        internal
-                      </span>
-                    )}
-                    <span className="text-stone-900">{a.name}</span>
-                    <span className="text-stone-500 text-xs">{a.email}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {(() => {
+              const isGovAttendee = (a: Attendee) => a.email && /\.(gc|parl)\.ca$/i.test(a.email);
+              const priority = m.attendees.filter((a) => a.isDpoh === true || a.isInternal || isGovAttendee(a));
+              const external = m.attendees.filter((a) => !a.isDpoh && !a.isInternal && !isGovAttendee(a));
+
+              return (
+                <div className="col-span-2">
+                  <FieldLabel>Attendees ({m.attendees.length})</FieldLabel>
+
+                  {m.attendees.length === 0 && (
+                    <div className="text-xs text-stone-400">(no attendees on this event)</div>
+                  )}
+
+                  {priority.length > 0 && (
+                    <div className="space-y-1 mb-3">
+                      {priority.map((a) => (
+                        <div key={a.id} className="flex items-center gap-2 text-sm flex-wrap">
+                          {a.isDpoh === true && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-200 rounded">
+                              DPOH
+                            </span>
+                          )}
+                          {!a.isDpoh && isGovAttendee(a) && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded">
+                              gov
+                            </span>
+                          )}
+                          {a.isInternal && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-stone-100 text-stone-700 border border-stone-200 rounded">
+                              internal
+                            </span>
+                          )}
+                          <span className="text-stone-900">{a.name}</span>
+                          <span className="text-stone-500 text-xs">{a.email}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {external.length > 0 && (
+                    <>
+                      <div className="text-[10px] uppercase tracking-wide text-stone-400 mb-1.5 mt-3">
+                        Other attendees ({external.length})
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-0.5">
+                        {external.map((a) => (
+                          <div key={a.id} className="text-xs text-stone-600 truncate" title={a.email}>
+                            <span className="text-stone-700">{a.name}</span>
+                            <span className="text-stone-400"> · {a.email}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="col-span-2">
               <FieldLabel>Subjects (pre-filled)</FieldLabel>
