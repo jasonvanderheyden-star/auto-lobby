@@ -2,7 +2,8 @@
  * scripts/seed-dpoh-from-ocl.ts
  *
  * Bootstraps PublicOfficial from OclPublicCommReport data.
- * Idempotent: TRUNCATEs PublicOfficial before inserting.
+ * Idempotent: DELETEs rows where resolvedFrom = 'ocl-comm-reports' before inserting.
+ * Other resolvedFrom namespaces (manual-ministers, parliament, geds, tbs-exempt) are untouched.
  *
  * Run via:
  *   npx dotenv-cli -e .env.local -- npx tsx scripts/seed-dpoh-from-ocl.ts

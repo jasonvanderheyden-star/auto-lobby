@@ -41,7 +41,8 @@ export interface ExtractionResult {
 /**
  * Extract DPOHs from OclPublicCommReport, canonicalize, dedupe, and bulk-insert
  * into PublicOfficial. Auto-grows InstitutionRegistry for unmatched institutions.
- * Idempotent: TRUNCATEs PublicOfficial first.
+ * Idempotent: DELETEs rows where resolvedFrom = 'ocl-comm-reports' before inserting.
+ * Other resolvedFrom namespaces (manual-ministers, parliament, geds, tbs-exempt) are untouched.
  */
 export async function extractDpohsFromOcl(): Promise<ExtractionResult> {
   console.log("[Phase 2] Extracting DPOHs from OclPublicCommReport...");
@@ -99,7 +100,7 @@ export async function extractDpohsFromOcl(): Promise<ExtractionResult> {
 
   const txResult = await db.$transaction(
     async (tx) => {
-      await tx.$executeRawUnsafe('TRUNCATE TABLE "PublicOfficial" RESTART IDENTITY CASCADE');
+      await tx.$executeRawUnsafe('DELETE FROM "PublicOfficial" WHERE "resolvedFrom" = \'ocl-comm-reports\'');
 
       let institutionsAutoCreated = 0;
       const autoCreatedNames: string[] = [];
