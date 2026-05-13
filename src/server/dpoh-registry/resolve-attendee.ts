@@ -219,11 +219,13 @@ export async function buildResolverContext(tenantId: string): Promise<ResolverCo
     lookupOfficialByEmail: async (email) =>
       db.publicOfficial.findFirst({
         where: { email },
+        orderBy: { confidence: "desc" },
         select: { id: true, name: true, role: true, isDpoh: true, dpohBasis: true, ruleRef: true, confidence: true },
       }),
     lookupOfficialByNameAtInstitution: async (name, institutionId) =>
       db.publicOfficial.findFirst({
         where: { institutionId, name: { equals: name, mode: "insensitive" } },
+        orderBy: { confidence: "desc" },
         select: { id: true, name: true, role: true, isDpoh: true, dpohBasis: true, ruleRef: true, confidence: true },
       }),
   };
