@@ -203,6 +203,8 @@ Not deferred scope — real gaps that should be closed before Phase 2/3 are cons
 
 3. **`src/server/submission/` is unbuilt.** The supervised Playwright-against-LRS submission harness is Phase 4+ scope and has not been started.
 
+4. **Name matching is exact (case-insensitive), not fuzzy.** `lookupOfficialByNameAtInstitution` uses `name: { equals: name, mode: "insensitive" }`. Calendar display names are messy — "The Hon. Jonathan Wilkinson" vs. "Jonathan Wilkinson", initials, French accents, hyphenated surnames. The authoritative seed rows will have clean canonical names, so this causes false negatives (person IS in the registry but doesn't match) rather than false positives. Not a blocker while the seed is small, but fuzzy name matching (e.g., trigram similarity or a normalisation pre-pass) is a future improvement to track.
+
 **What's next:** Close gap #1 (authoritative current-officials seed), then begin Phase 4 (Playwright submission harness).
 
 ## Out of scope
