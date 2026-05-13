@@ -32,6 +32,7 @@
     "@clerk/nextjs": "^7.2.3",
     "@prisma/client": "^6.19.3",
     "cheerio": "^1.2.0",
+    "fast-xml-parser": "^5.8.0",
     "googleapis": "^171.4.0",
     "iconv-lite": "^0.7.2",
     "inngest": "^4.2.6",
