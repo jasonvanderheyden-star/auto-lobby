@@ -14,7 +14,7 @@ const TITLE_ABBREV_EXPAND: Record<string, string> = {
 
 export function canonicalizeName(raw: string): string {
   let s = raw.trim();
-  s = s.replace(/^(the hon\.|hon\.|mr\.|mrs\.|ms\.|dr\.)\s+/i, "");
+  s = s.replace(/^(the honourable|honourable|the hon\.|hon\.|mr\.|mrs\.|ms\.|dr\.)\s+/i, "");
   s = s.replace(/,?\s+(p\.c\.|pc|m\.p\.|mp|q\.c\.|qc|c\.m\.|cm|c\.c\.|cc|o\.c\.|oc)$/i, "");
   return s.replace(/\s+/g, " ").trim();
 }

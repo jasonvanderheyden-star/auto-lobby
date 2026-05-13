@@ -190,7 +190,7 @@ model PublicOfficial {
   isDpoh         Boolean
   dpohBasis      String? // role | position-designation | office-designation
   ruleRef        String? // e.g. "Lobbying Act s. 2(1) 'DPOH' (c)(i)"
-  resolvedFrom   String // geds | parl | exempt-staff | manual
+  resolvedFrom   String // ocl-comm-reports | manual-ministers | parliament | geds | tbs-exempt
   confidence     Float
   effectiveFrom  DateTime?
   effectiveUntil DateTime?
