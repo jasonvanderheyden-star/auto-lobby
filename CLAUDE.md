@@ -160,24 +160,50 @@ Shipped in four chunks:
 - **Server-action "Sync now" gives no visual feedback** — the click queues an Inngest event but the UI doesn't show a "Syncing..." state. The actual `lastSyncedAt` updates a few seconds later when the worker finishes. Backlog: add an optimistic syncing badge.
 - **Wide-net ingestion is by design.** All calendar events ingest into `RawCalendarEvent` regardless of whether they involve government attendees. Filtering happens at Layer 2 (DPOH classification → `DetectedMeeting`). See "Anti-over-reporting bias" in non-negotiable constraints — the principle applies to *reporting*, not ingestion. Wide ingestion is needed for threshold accounting (denominator) and audit-trail negative evidence ("we considered this and excluded it").
 
-## Phase 2 — DPOH resolution + classifier (next)
+## Phase 2 — DPOH resolution + classifier (substantially complete)
 
 Goal: identify which of the 1,469+ raw events involve a Designated Public Office Holder, classify reportable vs. non-reportable, write `DetectedMeeting` rows with provenance.
 
-**Data sources to evaluate:**
-- GEDS (Government Electronic Directory Services) — federal employees with positions
-- parl.ca — MPs and Senators
-- Treasury Board ministerial exempt staff lists
+**What shipped:**
 
-**First chunk likely:** institution + DPOH registry seeding. Start with cabinet ministers and their exempt staff plus senior bureaucrats (DM, ADM) at the top ~10 institutions Deep Sky engages — climate (ECCC), NRCan, finance, ISED, treasury, ag, transport, infrastructure, foreign affairs (GAC), industry.
+> Note: there is no Chunk 2a commit. The authoritative current-official seed (cabinet ministers, MPs/Senators, DMs/ADMs from GEDS/parl.ca/TBS) was the intended first chunk but was skipped. The OCL extraction below served as the bootstrap instead. That gap is tracked in Known gaps.
 
-Then: attendee-resolution service (email → institution → official → DPOH y/n with confidence + dpohBasis citation), classifier MVP (Lobbying Act s. 5(1) tests for oral, arranged-in-advance communication on a registrable subject), `DetectedMeeting` writes with `ClassificationReason` rows for every signal that drove the verdict.
+- **Chunk 2b** (`9f4c7f2`): ~42k historical officials extracted, canonicalized, and deduplicated from `OclPublicCommReport`. Source: `resolvedFrom = 'ocl-comm-reports'`, confidence 0.7, **no email addresses**. Auto-grew +108 institutions for names that didn't match the seed list.
+- **Chunk 2c** (`119701b`, `5941691`): Attendee resolution service (`src/server/dpoh-registry/resolve-attendee.ts`) — email → domain → institution → named official → DPOH y/n, with confidence + `dpohBasis` citation. Anti-over-reporting bias applied: institution-domain match alone does **not** produce a DPOH signal; a named official match is required.
+- **Chunk 2d** (`58612de`): Classifier MVP (`src/server/classifier/`) — Lobbying Act s. 5(1) tests for oral, arranged-in-advance communication on a registrable subject. Writes `DetectedMeeting` + `ClassificationReason` rows for every signal.
+- **Chunk 2e** (`e8b2ad8`): Backfill run across 4,188 ingested events. Result: **1 lobbying / 32 needs-info / 4,155 not-lobbying**.
 
-Only after Phase 1 ships:
-- DPOH resolution service (GEDS + Parliament + ministerial exempt staff)
-- Classifier MVP
-- Monthly Certification UI (match `prototypes/Monthly-Certification.html`)
-- Playwright submission harness
+**What was NOT built (see Known gaps below):**
+
+The original plan called for seeding from authoritative current sources before running the classifier. That step was skipped in favour of the OCL extraction as a faster bootstrap. The authoritative seed — sitting cabinet ministers, current MPs/Senators, serving DMs/ADMs, ministerial exempt staff — is still unbuilt. The 42k OCL-derived officials are historical names from past filings with no emails and no guarantee of currency. This is the root cause of the 32 needs-info events.
+
+## Phase 3 — Monthly certification UI (complete through chunk 3e)
+
+Goal: surface classified meetings in a certification-ready UI, allow the CEO to review, confirm DPOHs, exclude non-lobbying meetings, and certify the batch, backed by an append-only audit trail.
+
+**What shipped:**
+
+- **Chunk 3a** (`99d1e59`): Filing engine at `src/server/filing-engine/generate-draft-mcr.ts` — generates `DraftMCR` rows from classified `DetectedMeeting` rows with field-level provenance on every pre-filled value.
+- **Chunk 3b** (`a84acf9`): Monthly certification UI at `/filings` — 33 DraftMCRs rendered, expandable rows with provenance display. Matches `prototypes/Monthly-Certification.html` visually.
+- **Chunk 3c** (`ffb7b59`): Confirm DPOH / exclude / certify server actions with cascading re-classification. Audit trail written inline in actions (not via a dedicated `audit-log/` service — see Known gaps).
+- **Chunk 3c-polish** (`a7170f9`): Attendee layout — priority group on top, external tail in 3-column grid.
+- **Chunk 3d-polish** (`0f1bf17`): Status/classification orthogonality, `useFormStatus` pending state.
+- **Fix** (`435c1c1`): Remove `isDpoh` `orderBy` on nullable boolean (runtime Prisma error on `/filings`).
+- **Chunk 3e** (`c130f9d`): OCL history hints for needs-info gov attendees — surfaces historical comm-report data in the UI to help identify unknown officials.
+
+**Phase 3 is complete.**
+
+## Known gaps
+
+Not deferred scope — real gaps that should be closed before Phase 2/3 are considered fully done.
+
+1. **Authoritative current-officials seed is unbuilt.** `PublicOfficial` is populated from historical OCL comm-report data only (`resolvedFrom = 'ocl-comm-reports'`). Sitting cabinet ministers, current MPs/Senators, serving DMs/ADMs, and ministerial exempt staff are not in the registry. Meetings with these contacts fall through to institution-domain fallback and produce `gov-attendee-unknown-role` (the root cause of the 32 needs-info events). **This is the open Phase 2 priority.** Target sources: GEDS (DMs/ADMs), parl.ca (MPs/Senators), TBS Proactive Disclosure (ministerial exempt staff), static curated list (ministers + parliamentary secretaries).
+
+2. **`src/server/audit-log/` is a placeholder.** Audit trail writes happen inline in `src/server/filing-engine/` and server actions. No dedicated append-only audit service exists. Acceptable for single-tenant dev; extract before multi-tenant launch.
+
+3. **`src/server/submission/` is unbuilt.** The supervised Playwright-against-LRS submission harness is Phase 4+ scope and has not been started.
+
+**What's next:** Close gap #1 (authoritative current-officials seed), then begin Phase 4 (Playwright submission harness).
 
 ## Out of scope
 
