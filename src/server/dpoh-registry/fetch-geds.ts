@@ -1,6 +1,6 @@
 // Sources:
-//   DMs:  https://geds-sage.gc.ca/en/GEDS/?pgid=016&fid=11  (curated GEDS Deputy Ministers listing)
-//   ADMs: https://api.geds-sage.gc.ca/GEDS20/dist/opendata/ (open data API — probed, may be unavailable)
+//   DMs:  https://geds-sage.gc.ca/en/GEDS/?pgid=016&fid=11 (curated Deputy Ministers listing)
+//   ADMs: https://geds-sage.gc.ca/en/GEDS/?pgid=010 advanced search, title = "Assistant/Associate Deputy Minister"
 
 import * as cheerio from "cheerio";
 import { canonicalizeName } from "./canonicalize";
@@ -15,11 +15,12 @@ import { canonicalizeName } from "./canonicalize";
 const GEDS_DM_PAGE_URL = "https://geds-sage.gc.ca/en/GEDS/?pgid=016&fid=11";
 const GEDS_ENTRIES_URL = "https://geds-sage.gc.ca/en/GEDS/?pgid=151";
 
-// NOTE: As of 2026-05-14, this endpoint returns HTTP 403 Forbidden.
-// If ADMs are needed in a future chunk, check api.geds-sage.gc.ca for a new
-// open-data endpoint, or scrape https://geds-sage.gc.ca with a title filter
-// using the same two-request pattern as the DM fetch above.
-const GEDS_ADM_API_URL = "https://api.geds-sage.gc.ca/GEDS20/dist/opendata/";
+// NOTE: ADMs are fetched via the GEDS advanced search (pgid=010 → pgid=011).
+// Form fields: sv=<title>, sf=4 (Title), sc=4 (Exact). Results paginate at 25/page
+// via the same pgid=151 POST endpoint as DMs. If zero ADMs are returned, load
+// pgid=010 in a browser and verify sf=4/sc=4 still exist and pgid=011 is the submit target.
+const GEDS_ADM_SEARCH_PAGE_URL = "https://geds-sage.gc.ca/en/GEDS/?pgid=010";
+const GEDS_ADM_SEARCH_URL = "https://geds-sage.gc.ca/en/GEDS/?pgid=011";
 
 export interface GedsRow {
   name: string;
@@ -38,6 +39,8 @@ export interface FetchGedsResult {
 // Bilingual suffixes (" - French name") are stripped before this lookup.
 const GEDS_DEPT_MAP: Readonly<Record<string, string>> = {
   "justice canada": "Department of Justice Canada",
+  // GEDS uses the full legal name; our registry uses the short form with domains attached.
+  "treasury board of canada secretariat": "Treasury Board Secretariat",
 };
 
 function normalizeGedsDept(raw: string): string {
@@ -70,6 +73,7 @@ async function fetchWithTimeoutPost(
   url: string,
   body: URLSearchParams,
   timeoutMs = 30_000,
+  referer = GEDS_DM_PAGE_URL,
 ): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -80,7 +84,7 @@ async function fetchWithTimeoutPost(
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; auto-lobby/1.0)",
         "Content-Type": "application/x-www-form-urlencoded",
-        Referer: GEDS_DM_PAGE_URL,
+        Referer: referer,
       },
       body: body.toString(),
     });
@@ -122,7 +126,7 @@ function parseEntriesHtml(html: string): GedsRow[] {
       .split(";")
       .map((s) => s.replace(/\s+/g, " ").trim())
       .filter(Boolean);
-    const roleSegment = segments.find((s) => /^(deputy|associate deputy)\s/i.test(s));
+    const roleSegment = segments.find((s) => /^(assistant deputy|associate deputy|deputy)\s/i.test(s));
     const role = roleSegment ?? "Deputy Minister";
 
     dms.push({ name, role, institution });
@@ -172,40 +176,87 @@ async function fetchGedsDms(): Promise<GedsRow[]> {
   return dms;
 }
 
+const ADM_TITLES = ["Assistant Deputy Minister", "Associate Deputy Minister"] as const;
+const GEDS_PAGE_SIZE = 25;
+
 async function fetchGedsAdms(): Promise<GedsRow[]> {
-  // One request, 10-second timeout per brief. Throw on non-200 or unusable format.
-  const indexHtml = await fetchWithTimeout(GEDS_ADM_API_URL, 10_000);
+  const seen = new Set<string>();
+  const adms: GedsRow[] = [];
 
-  // Check for a usable index — expect some machine-readable listing of data files.
-  const hasUsableContent =
-    indexHtml.includes(".csv") ||
-    indexHtml.includes(".json") ||
-    indexHtml.includes(".xml") ||
-    indexHtml.includes("href=");
+  for (const title of ADM_TITLES) {
+    // Step 1: POST to the advanced search to get a bcrypt-signed filter token.
+    const searchBody = new URLSearchParams({
+      pgid: "011",
+      cdn: "",
+      sv: title,
+      sf: "4", // Title field
+      sc: "4", // Exact match
+    });
+    const searchHtml = await fetchWithTimeoutPost(
+      GEDS_ADM_SEARCH_URL,
+      searchBody,
+      30_000,
+      GEDS_ADM_SEARCH_PAGE_URL,
+    );
 
-  if (!hasUsableContent) {
+    const tokenMatch = searchHtml.match(/showPageController\(1,(\d+),"([^"]+)",1\)/);
+    if (!tokenMatch) {
+      const titleMatch = searchHtml.match(/<title>([^<]*)<\/title>/);
+      const formFields = [...searchHtml.matchAll(/name="([^"]+)"/g)].map((m) => m[1]);
+      throw new Error(
+        `fetchGedsAdms: could not find filter token for title "${title}"\n` +
+          `  Page title: "${titleMatch?.[1]?.trim() ?? "(none)"}"\n` +
+          `  Form fields found: ${formFields.join(", ")}\n` +
+          `  The GEDS search form structure may have changed.`,
+      );
+    }
+
+    const totalCount = parseInt(tokenMatch[1]!, 10);
+    const token = tokenMatch[2]!;
+    const numPages = Math.ceil(totalCount / GEDS_PAGE_SIZE);
+
+    // Step 2: Fetch all pages of results.
+    for (let page = 1; page <= numPages; page++) {
+      const entriesBody = new URLSearchParams({ p1: String(page), p2: token, p3: "1" });
+      const responseText = await fetchWithTimeoutPost(
+        GEDS_ENTRIES_URL,
+        entriesBody,
+        30_000,
+        GEDS_ADM_SEARCH_URL,
+      );
+
+      let entriesHtml: string;
+      try {
+        const json = JSON.parse(responseText) as { searchResults?: string };
+        entriesHtml = json.searchResults ?? "";
+      } catch {
+        entriesHtml = responseText;
+      }
+
+      for (const row of parseEntriesHtml(entriesHtml)) {
+        // Deduplicate by name+institution across both title searches.
+        const key = `${row.name.toLowerCase()}|${row.institution.toLowerCase()}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          adms.push(row);
+        }
+      }
+    }
+  }
+
+  if (adms.length === 0) {
     throw new Error(
-      `fetchGedsAdms: GEDS open data API at ${GEDS_ADM_API_URL} returned a response ` +
-        `but no usable data format was found (no CSV/JSON/XML links detected).\n` +
-        `  Response length: ${indexHtml.length} chars\n` +
-        `  Handle ADMs in a follow-up chunk using an alternative source.`,
+      `fetchGedsAdms: no entries found across title searches: ${ADM_TITLES.join(", ")}.\n` +
+        `  The GEDS advanced search structure may have changed.`,
     );
   }
 
-  // If we get here, the API returned a usable index. Parse and filter ADMs.
-  // (Currently unreachable — API is 403 — but implemented for when it becomes available.)
-  throw new Error(
-    `fetchGedsAdms: GEDS open data API returned a usable index at ${GEDS_ADM_API_URL}, ` +
-      `but ADM parsing from that index is not yet implemented. ` +
-      `Implement ADM extraction in a follow-up chunk.`,
-  );
+  return adms;
 }
 
 export async function fetchGeds(): Promise<FetchGedsResult> {
   const dms = await fetchGedsDms();
 
-  // ADM fetch: throws on 403 or unusable format per brief.
-  // We capture the error rather than aborting the DM seed.
   let adms: GedsRow[] = [];
   let admError: string | null = null;
   try {

@@ -40,6 +40,11 @@ export async function seedGeds(): Promise<SeedGedsResult> {
       await tx.$executeRawUnsafe(
         'DELETE FROM "PublicOfficial" WHERE "resolvedFrom" = \'geds\'',
       );
+      // Remove the orphan auto-created before GEDS_DEPT_MAP had the TBS mapping.
+      // Safe to re-run: if the row doesn't exist the delete is a no-op.
+      await tx.$executeRawUnsafe(
+        `DELETE FROM "InstitutionRegistry" WHERE name = 'Treasury Board of Canada Secretariat' AND NOT EXISTS (SELECT 1 FROM "PublicOfficial" WHERE "institutionId" = "InstitutionRegistry".id)`,
+      );
 
       let institutionsAutoCreated = 0;
       const institutionsAutoCreatedNames: string[] = [];
