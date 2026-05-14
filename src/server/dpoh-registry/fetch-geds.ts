@@ -4,6 +4,7 @@
 
 import * as cheerio from "cheerio";
 import { canonicalizeName } from "./canonicalize";
+import { fetchWithTimeout, fetchWithTimeoutPost } from "./geds-http";
 
 // NOTE: The GEDS DM listing (pgid=016&fid=11) renders its results via AJAX.
 // The page embeds a bcrypt-signed filter token in a showPageController() JS call.
@@ -48,51 +49,6 @@ function normalizeGedsDept(raw: string): string {
   const dashIdx = raw.indexOf(" - ");
   const english = dashIdx >= 0 ? raw.slice(0, dashIdx).trim() : raw.trim();
   return GEDS_DEPT_MAP[english.toLowerCase()] ?? english;
-}
-
-async function fetchWithTimeout(url: string, timeoutMs = 30_000): Promise<string> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; auto-lobby/1.0)",
-        Accept: "text/html,application/xhtml+xml",
-        "Accept-Language": "en-CA,en;q=0.9",
-      },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} fetching ${url}`);
-    return await res.text();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function fetchWithTimeoutPost(
-  url: string,
-  body: URLSearchParams,
-  timeoutMs = 30_000,
-  referer = GEDS_DM_PAGE_URL,
-): Promise<string> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; auto-lobby/1.0)",
-        "Content-Type": "application/x-www-form-urlencoded",
-        Referer: referer,
-      },
-      body: body.toString(),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} fetching ${url}`);
-    return await res.text();
-  } finally {
-    clearTimeout(timer);
-  }
 }
 
 function parseEntriesHtml(html: string): GedsRow[] {
@@ -151,7 +107,7 @@ async function fetchGedsDms(): Promise<GedsRow[]> {
 
   // Step 2: POST to the entries endpoint with the token to get the HTML fragment.
   const body = new URLSearchParams({ p1: "1", p2: token, p3: "1" });
-  const responseText = await fetchWithTimeoutPost(GEDS_ENTRIES_URL, body);
+  const responseText = await fetchWithTimeoutPost(GEDS_ENTRIES_URL, body, 30_000, GEDS_DM_PAGE_URL);
 
   // The endpoint returns JSON with a searchResults field containing an HTML fragment.
   let entriesHtml: string;
