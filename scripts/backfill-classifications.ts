@@ -4,21 +4,35 @@ import { buildResolverContext } from "../src/server/dpoh-registry/resolve-attend
 
 async function main() {
   const start = Date.now();
+  const needsInfoOnly = process.argv.includes("--needs-info-only");
 
-  const allEvents = await db.rawCalendarEvent.findMany({
-    select: { id: true, tenantId: true },
-    orderBy: { startsAt: "desc" },
-  });
-  const alreadyClassified = await db.detectedMeeting.findMany({
-    select: { rawEventId: true },
-  });
-  const classifiedSet = new Set(alreadyClassified.map((c) => c.rawEventId));
-  const remaining = allEvents.filter((e) => !classifiedSet.has(e.id));
+  let remaining: Array<{ id: string; tenantId: string }>;
 
-  console.log(`\nClassifier backfill (optimized)`);
-  console.log(`  Total raw events:   ${allEvents.length}`);
-  console.log(`  Already classified: ${classifiedSet.size}`);
-  console.log(`  Remaining to do:    ${remaining.length}\n`);
+  if (needsInfoOnly) {
+    const needsInfoMeetings = await db.detectedMeeting.findMany({
+      where: { classification: "needs-info" },
+      select: { rawEventId: true, tenantId: true },
+    });
+    remaining = needsInfoMeetings.map((m) => ({ id: m.rawEventId, tenantId: m.tenantId }));
+
+    console.log(`\nClassifier re-run (needs-info only)`);
+    console.log(`  needs-info events to re-classify: ${remaining.length}\n`);
+  } else {
+    const allEvents = await db.rawCalendarEvent.findMany({
+      select: { id: true, tenantId: true },
+      orderBy: { startsAt: "desc" },
+    });
+    const alreadyClassified = await db.detectedMeeting.findMany({
+      select: { rawEventId: true },
+    });
+    const classifiedSet = new Set(alreadyClassified.map((c) => c.rawEventId));
+    remaining = allEvents.filter((e) => !classifiedSet.has(e.id));
+
+    console.log(`\nClassifier backfill (optimized)`);
+    console.log(`  Total raw events:   ${allEvents.length}`);
+    console.log(`  Already classified: ${classifiedSet.size}`);
+    console.log(`  Remaining to do:    ${remaining.length}\n`);
+  }
 
   if (remaining.length === 0) {
     console.log("Nothing to do.");
