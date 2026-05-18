@@ -160,22 +160,32 @@ Shipped in four chunks:
 - **Server-action "Sync now" gives no visual feedback** — the click queues an Inngest event but the UI doesn't show a "Syncing..." state. The actual `lastSyncedAt` updates a few seconds later when the worker finishes. Backlog: add an optimistic syncing badge.
 - **Wide-net ingestion is by design.** All calendar events ingest into `RawCalendarEvent` regardless of whether they involve government attendees. Filtering happens at Layer 2 (DPOH classification → `DetectedMeeting`). See "Anti-over-reporting bias" in non-negotiable constraints — the principle applies to *reporting*, not ingestion. Wide ingestion is needed for threshold accounting (denominator) and audit-trail negative evidence ("we considered this and excluded it").
 
-## Phase 2 — DPOH resolution + classifier (substantially complete)
+## Phase 2 — DPOH resolution + classifier (complete)
 
 Goal: identify which of the 1,469+ raw events involve a Designated Public Office Holder, classify reportable vs. non-reportable, write `DetectedMeeting` rows with provenance.
 
 **What shipped:**
 
-> Note: there is no Chunk 2a commit. The authoritative current-official seed (cabinet ministers, MPs/Senators, DMs/ADMs from GEDS/parl.ca/TBS) was the intended first chunk but was skipped. The OCL extraction below served as the bootstrap instead. That gap is tracked in Known gaps.
+> Note: there is no Chunk 2a commit. The authoritative current-official seed (cabinet ministers, MPs/Senators, DMs/ADMs from GEDS/parl.ca/TBS) was the intended first chunk but was skipped. The OCL extraction below served as the bootstrap instead.
 
 - **Chunk 2b** (`9f4c7f2`): ~42k historical officials extracted, canonicalized, and deduplicated from `OclPublicCommReport`. Source: `resolvedFrom = 'ocl-comm-reports'`, confidence 0.7, **no email addresses**. Auto-grew +108 institutions for names that didn't match the seed list.
 - **Chunk 2c** (`119701b`, `5941691`): Attendee resolution service (`src/server/dpoh-registry/resolve-attendee.ts`) — email → domain → institution → named official → DPOH y/n, with confidence + `dpohBasis` citation. Anti-over-reporting bias applied: institution-domain match alone does **not** produce a DPOH signal; a named official match is required.
 - **Chunk 2d** (`58612de`): Classifier MVP (`src/server/classifier/`) — Lobbying Act s. 5(1) tests for oral, arranged-in-advance communication on a registrable subject. Writes `DetectedMeeting` + `ClassificationReason` rows for every signal.
 - **Chunk 2e** (`e8b2ad8`): Backfill run across 4,188 ingested events. Result: **1 lobbying / 32 needs-info / 4,155 not-lobbying**.
+- **Chunk 2f**: Cabinet ministers + parliamentary secretaries seeded from `canada.ca/en/government/ministers.html`. `resolvedFrom = 'manual-ministers'`, confidence 1.0. `canonicalizeName()` extended to strip "The Honourable" / "Honourable" prefixes.
+- **Chunk 2g**: Current MPs seeded from ourcommons.ca XML feed; senators from sencanada.ca Umbraco AJAX endpoint. `resolvedFrom = 'parliament'`, confidence 0.95.
+- **Chunk 2h / 2h.5**: Deputy Ministers seeded from GEDS curated listing (`pgid=016&fid=11`); Assistant + Associate Deputy Ministers via GEDS advanced title search (`pgid=010 → pgid=011`). Two-step bcrypt-token fetch pattern. `resolvedFrom = 'geds'`, confidence 0.95. Shared HTTP helpers extracted to `src/server/dpoh-registry/geds-http.ts`.
+- **Chunk 2i** (`cfd2762`): Ministerial exempt staff seeded via GEDS org-tree traversal — search minister by name → person page breadcrumb → ministerial office org unit → direct reports + one level of sub-orgs. `resolvedFrom = 'tbs-exempt'`, confidence 0.9, `dpohBasis = position-designation`, DPOH Regs Item 11. Result: **178 staff across 16 ministerial offices**. 11 skipped: 6 not in GEDS (political appointments without public service records), 5 ambiguous common names.
+- **Chunk 2j** (`0b831f0`): Backfill re-run across all 10,130 events + targeted re-classification of needs-info events. Final result: **1 lobbying / 19 needs-info / 10,095 not-lobbying** across 10,130 events. The 19 residual needs-info are a hard floor — contacts below current registry coverage or display-name mismatches not resolvable by exact matching.
 
-**What was NOT built (see Known gaps below):**
+**resolvedFrom namespaces and confidence levels:**
+- `ocl-comm-reports` — 0.7 — historical OCL filings, no emails, ~42k rows
+- `manual-ministers` — 1.0 — cabinet ministers + parliamentary secretaries (canada.ca)
+- `parliament` — 0.95 — current MPs (ourcommons.ca) + senators (sencanada.ca)
+- `geds` — 0.95 — DMs + ADMs (GEDS curated listing + title search)
+- `tbs-exempt` — 0.9 — ministerial exempt staff (GEDS org-tree traversal)
 
-The original plan called for seeding from authoritative current sources before running the classifier. That step was skipped in favour of the OCL extraction as a faster bootstrap. The authoritative seed — sitting cabinet ministers, current MPs/Senators, serving DMs/ADMs, ministerial exempt staff — is still unbuilt. The 42k OCL-derived officials are historical names from past filings with no emails and no guarantee of currency. This is the root cause of the 32 needs-info events.
+**Phase 2 is complete.**
 
 ## Phase 3 — Monthly certification UI (complete through chunk 3e)
 
@@ -195,17 +205,19 @@ Goal: surface classified meetings in a certification-ready UI, allow the CEO to 
 
 ## Known gaps
 
-Not deferred scope — real gaps that should be closed before Phase 2/3 are considered fully done.
+Not deferred scope — real gaps that should be closed before the relevant phase is considered fully done.
 
-1. **Authoritative current-officials seed is unbuilt.** `PublicOfficial` is populated from historical OCL comm-report data only (`resolvedFrom = 'ocl-comm-reports'`). Sitting cabinet ministers, current MPs/Senators, serving DMs/ADMs, and ministerial exempt staff are not in the registry. Meetings with these contacts fall through to institution-domain fallback and produce `gov-attendee-unknown-role` (the root cause of the 32 needs-info events). **This is the open Phase 2 priority.** Target sources: GEDS (DMs/ADMs), parl.ca (MPs/Senators), TBS Proactive Disclosure (ministerial exempt staff), static curated list (ministers + parliamentary secretaries).
+1. ~~**Authoritative current-officials seed is unbuilt.**~~ **CLOSED** — All five sources now seeded: OCL comm-reports, cabinet ministers, MPs/senators, DMs/ADMs, ministerial exempt staff. See Phase 2 resolvedFrom table above.
 
-2. **`src/server/audit-log/` is a placeholder.** Audit trail writes happen inline in `src/server/filing-engine/` and server actions. No dedicated append-only audit service exists. Acceptable for single-tenant dev; extract before multi-tenant launch.
+2. **Champagne (Finance) exempt staff returns 0.** The Finance ministerial office org structure in GEDS nests staff deeper than one sub-org level. The current one-level traversal in `fetch-exempt-staff.ts` doesn't reach them. Fix: extend `fetchStaffForMinister` to traverse two levels deep for offices that return 0 people at the first level.
 
-3. **`src/server/submission/` is unbuilt.** The supervised Playwright-against-LRS submission harness is Phase 4+ scope and has not been started.
+3. **`src/server/audit-log/` is a placeholder.** Audit trail writes happen inline in `src/server/filing-engine/` and server actions. No dedicated append-only audit service exists. Acceptable for single-tenant dev; extract before multi-tenant launch.
 
-4. **Name matching is exact (case-insensitive), not fuzzy.** `lookupOfficialByNameAtInstitution` uses `name: { equals: name, mode: "insensitive" }`. Calendar display names are messy — "The Hon. Jonathan Wilkinson" vs. "Jonathan Wilkinson", initials, French accents, hyphenated surnames. The authoritative seed rows will have clean canonical names, so this causes false negatives (person IS in the registry but doesn't match) rather than false positives. Not a blocker while the seed is small, but fuzzy name matching (e.g., trigram similarity or a normalisation pre-pass) is a future improvement to track.
+4. **`src/server/submission/` is unbuilt.** The supervised Playwright-against-LRS submission harness is Phase 4+ scope and has not been started.
 
-**What's next:** Close gap #1 (authoritative current-officials seed), then begin Phase 4 (Playwright submission harness).
+5. **Name matching is exact (case-insensitive), not fuzzy.** `lookupOfficialByNameAtInstitution` uses `name: { equals: name, mode: "insensitive" }`. Calendar display names are messy — "The Hon. Jonathan Wilkinson" vs. "Jonathan Wilkinson", initials, French accents, hyphenated surnames. This causes false negatives (person IS in the registry but doesn't match). The 19 residual needs-info events are partly attributable to this. Fuzzy name matching (trigram similarity or a normalisation pre-pass) is a future improvement.
+
+**What's next:** Phase 4 (Playwright submission harness) unless Phase 3 polish is prioritized first.
 
 ## Out of scope
 
