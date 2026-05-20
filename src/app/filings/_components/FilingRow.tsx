@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { confirmDpohAction, excludeMeetingAction } from "../_actions";
@@ -184,7 +185,15 @@ export function FilingRow({
             })()}
 
             <div className="col-span-2">
-              <FieldLabel>Subjects (pre-filled)</FieldLabel>
+              <div className="flex items-center justify-between mb-1.5">
+                <FieldLabel>Subjects (pre-filled)</FieldLabel>
+                <Link
+                  href={`/filings/${draft.id}/subjects`}
+                  className="text-xs text-emerald-700 hover:underline"
+                >
+                  Edit subjects →
+                </Link>
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {(draft.subjects ?? []).map((s) => (
                   <span
