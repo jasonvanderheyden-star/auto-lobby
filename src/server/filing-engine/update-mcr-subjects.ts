@@ -12,16 +12,16 @@ export async function updateMcrSubjectsAction(formData: FormData) {
   if (!ctx) throw new Error("No tenant");
 
   const draftMcrId = formData.get("draftMcrId");
-  const raw = formData.get("selectedIds");
+  const raw = formData.get("oclCodes");
   if (typeof draftMcrId !== "string" || typeof raw !== "string") {
     throw new Error("Missing required fields");
   }
 
-  let selectedIds: string[];
+  let selectedOclCodes: number[];
   try {
-    selectedIds = JSON.parse(raw) as string[];
+    selectedOclCodes = JSON.parse(raw) as number[];
   } catch {
-    throw new Error("Invalid selectedIds payload");
+    throw new Error("Invalid oclCodes payload");
   }
 
   const draft = await db.draftMcr.findFirst({
@@ -41,7 +41,7 @@ export async function updateMcrSubjectsAction(formData: FormData) {
   });
   if (!draft) throw new Error("Draft not found");
 
-  const subjects = selectedIds.map((id) => ({ subjectId: id, source: "manual" }));
+  const subjects = selectedOclCodes.map((code) => ({ oclCode: code, source: "manual" }));
   const prevProvenance = (draft.provenance ?? {}) as Record<string, unknown>;
   const newProvenance = {
     ...prevProvenance,
@@ -69,11 +69,11 @@ export async function updateMcrSubjectsAction(formData: FormData) {
       create: {
         tenantId: ctx.tenantId,
         publicOfficialId: attendee.resolvedOfficialId!,
-        subjectIds: selectedIds,
+        oclCodes: selectedOclCodes.map(String),
         confirmedBy: userId,
       },
       update: {
-        subjectIds: selectedIds,
+        oclCodes: selectedOclCodes.map(String),
         confirmedBy: userId,
       },
     });
@@ -86,8 +86,8 @@ export async function updateMcrSubjectsAction(formData: FormData) {
       action: "subjects-updated",
       subject: draftMcrId,
       payload: {
-        selectedIds,
-        count: selectedIds.length,
+        oclCodes: selectedOclCodes,
+        count: selectedOclCodes.length,
         dpohPreferencesUpdated: dpohAttendees.length,
       },
     },

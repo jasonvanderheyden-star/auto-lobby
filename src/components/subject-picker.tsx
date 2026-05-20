@@ -3,106 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { updateMcrSubjectsAction } from "@/server/filing-engine/update-mcr-subjects";
-
-// ── Subject data (OCL-style, matches prototypes/File-Meeting.html) ──────────
-
-type SubjectItem = { id: string; name: string; related?: string[] };
-type SubjectGroup = { name: string; hint?: string; items: SubjectItem[] };
-
-const GROUPS: SubjectGroup[] = [
-  {
-    name: "Climate, Energy & Environment",
-    hint: "Most relevant for Deep Sky",
-    items: [
-      { id: "climate", name: "Climate", related: ["environment", "energy", "taxation"] },
-      { id: "environment", name: "Environment", related: ["climate", "science-tech"] },
-      { id: "energy", name: "Energy", related: ["climate", "mining", "industry"] },
-      { id: "mining", name: "Mining", related: ["energy", "environment"] },
-      { id: "forestry", name: "Forestry", related: ["environment", "climate"] },
-      { id: "fisheries", name: "Fisheries", related: ["environment"] },
-    ],
-  },
-  {
-    name: "Economy & Finance",
-    items: [
-      { id: "taxation", name: "Taxation and Finance", related: ["budget", "industry"] },
-      { id: "budget", name: "Budget", related: ["taxation", "economic-development"] },
-      { id: "economic-development", name: "Economic Development", related: ["industry", "small-business"] },
-      { id: "small-business", name: "Small Business", related: ["economic-development", "taxation"] },
-      { id: "financial-institutions", name: "Financial Institutions" },
-      { id: "pensions", name: "Pensions" },
-    ],
-  },
-  {
-    name: "Industry & Innovation",
-    items: [
-      { id: "industry", name: "Industry", related: ["economic-development", "science-tech"] },
-      { id: "science-tech", name: "Science and Technology", related: ["climate", "r-and-d"] },
-      { id: "r-and-d", name: "Research and Development", related: ["science-tech", "industry"] },
-      { id: "intellectual-property", name: "Intellectual Property" },
-      { id: "infrastructure", name: "Infrastructure", related: ["transportation", "energy"] },
-      { id: "telecommunications", name: "Telecommunications" },
-    ],
-  },
-  {
-    name: "Trade & International",
-    items: [
-      { id: "international-trade", name: "International Trade", related: ["industry", "internal-trade"] },
-      { id: "international-relations", name: "International Relations" },
-      { id: "internal-trade", name: "Internal Trade" },
-      { id: "defence", name: "Defence" },
-      { id: "national-security", name: "National Security" },
-      { id: "immigration", name: "Immigration" },
-    ],
-  },
-  {
-    name: "Health, Labour & Social",
-    items: [
-      { id: "health", name: "Health", related: ["pharmaceutical"] },
-      { id: "pharmaceutical", name: "Pharmaceutical Industry", related: ["health"] },
-      { id: "labour", name: "Labour", related: ["employment"] },
-      { id: "employment", name: "Employment and Training", related: ["labour"] },
-      { id: "education", name: "Education" },
-      { id: "housing", name: "Housing" },
-      { id: "social-issues", name: "Social Issues" },
-      { id: "consumer-issues", name: "Consumer Issues" },
-    ],
-  },
-  {
-    name: "Government, Law & Regions",
-    items: [
-      { id: "government-procurement", name: "Government Procurement" },
-      { id: "justice", name: "Justice and Law Enforcement" },
-      { id: "privacy", name: "Privacy and Access to Information" },
-      { id: "regional-development", name: "Regional Development" },
-      { id: "municipalities", name: "Municipalities" },
-      { id: "indigenous", name: "Indigenous Affairs", related: ["regional-development"] },
-    ],
-  },
-  {
-    name: "Culture, Media & Other",
-    items: [
-      { id: "arts-culture", name: "Arts and Culture" },
-      { id: "broadcasting", name: "Broadcasting", related: ["telecommunications"] },
-      { id: "media", name: "Media" },
-      { id: "sports", name: "Sports" },
-      { id: "tourism", name: "Tourism" },
-      { id: "religion", name: "Religion" },
-      { id: "agriculture", name: "Agriculture" },
-      { id: "transportation", name: "Transportation", related: ["infrastructure"] },
-      { id: "labelling", name: "Labelling" },
-    ],
-  },
-];
-
-const ALL_ITEMS = GROUPS.flatMap((g) => g.items.map((it) => ({ ...it, group: g.name })));
-const BY_ID = Object.fromEntries(ALL_ITEMS.map((it) => [it.id, it]));
-
-// Deep Sky registration subjects — shown as "on your registration"
-const ON_REGISTRATION = new Set(["environment", "energy", "science-tech", "industry"]);
-
-// ── Suggested (static for now; Phase N: derive from meeting title + past filings) ─
-const SUGGESTED_IDS = ["environment", "climate", "energy", "science-tech", "taxation"];
+import {
+  SUBJECT_GROUPS,
+  SUBJECT_BY_ID,
+  SUBJECT_BY_OCL_CODE,
+  ON_REGISTRATION_IDS,
+  SUGGESTED_IDS,
+  type OclSubjectItem,
+} from "@/lib/ocl-subjects";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -130,7 +38,6 @@ interface ChipProps {
 function Chip({ id, name, active, variant = "default", onToggle }: ChipProps) {
   const base =
     "animate-chip-in inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm border transition-colors select-none cursor-pointer";
-
   const style = active
     ? "bg-emerald-700 text-white border-emerald-700 hover:bg-emerald-800"
     : variant === "suggested"
@@ -161,11 +68,20 @@ function Chip({ id, name, active, variant = "default", onToggle }: ChipProps) {
 
 export interface SubjectPickerProps {
   draftMcrId: string;
-  initialSelectedIds: string[];
+  /** OCL canonical numeric codes for subjects already saved on this DraftMCR */
+  initialSelectedOclCodes: number[];
 }
 
-export function SubjectPicker({ draftMcrId, initialSelectedIds }: SubjectPickerProps) {
-  const [selected, setSelected] = useState<Set<string>>(new Set(initialSelectedIds));
+export function SubjectPicker({ draftMcrId, initialSelectedOclCodes }: SubjectPickerProps) {
+  // Internal state uses slugs for easy toggle lookups; we map to oclCodes at submit time
+  const [selected, setSelected] = useState<Set<string>>(
+    () =>
+      new Set(
+        initialSelectedOclCodes
+          .map((code) => SUBJECT_BY_OCL_CODE[code]?.id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+  );
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -191,7 +107,7 @@ export function SubjectPicker({ draftMcrId, initialSelectedIds }: SubjectPickerP
   }
 
   const term = search.trim().toLowerCase();
-  const filteredGroups = GROUPS.map((g) => ({
+  const filteredGroups = SUBJECT_GROUPS.map((g) => ({
     ...g,
     items: term
       ? g.items.filter(
@@ -201,22 +117,25 @@ export function SubjectPicker({ draftMcrId, initialSelectedIds }: SubjectPickerP
   })).filter((g) => g.items.length > 0);
 
   const selectedItems = [...selected]
-    .map((id) => BY_ID[id])
-    .filter(Boolean) as (SubjectItem & { group: string })[];
+    .map((id) => SUBJECT_BY_ID[id])
+    .filter(Boolean) as (OclSubjectItem & { group: string })[];
 
-  // Compliance note
-  const allOnReg = selectedItems.length > 0 && selectedItems.every((it) => ON_REGISTRATION.has(it.id));
-  const offReg = selectedItems.filter((it) => !ON_REGISTRATION.has(it.id));
+  // OCL codes to submit — the canonical numbers, not slugs
+  const oclCodesForSubmission = [...selected]
+    .map((slug) => SUBJECT_BY_ID[slug]?.oclCode)
+    .filter((c): c is number => c !== undefined);
+
+  const allOnReg = selectedItems.length > 0 && selectedItems.every((it) => ON_REGISTRATION_IDS.has(it.id));
+  const offReg = selectedItems.filter((it) => !ON_REGISTRATION_IDS.has(it.id));
 
   return (
     <form action={updateMcrSubjectsAction} className="contents">
       <input type="hidden" name="draftMcrId" value={draftMcrId} />
-      <input type="hidden" name="selectedIds" value={JSON.stringify([...selected])} />
+      <input type="hidden" name="oclCodes" value={JSON.stringify(oclCodesForSubmission)} />
 
       <div className="grid grid-cols-3 gap-8">
         {/* ── Left 2 cols: picker ─────────────────────────────────────── */}
         <div className="col-span-2 space-y-4">
-          {/* Selected chips */}
           <section className="bg-white border border-stone-200 rounded-xl overflow-hidden">
             <div className="px-5 pt-5 pb-4 border-b border-stone-100">
               <div className="flex items-start justify-between">
@@ -237,6 +156,7 @@ export function SubjectPicker({ draftMcrId, initialSelectedIds }: SubjectPickerP
                 </div>
               </div>
 
+              {/* Selected chips */}
               <div className="mt-4 flex flex-wrap gap-1.5 min-h-[28px]">
                 {selectedItems.length === 0 ? (
                   <span className="text-sm text-stone-400">No subjects selected yet.</span>
@@ -285,7 +205,7 @@ export function SubjectPicker({ draftMcrId, initialSelectedIds }: SubjectPickerP
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {SUGGESTED_IDS.map((id) => {
-                    const it = BY_ID[id];
+                    const it = SUBJECT_BY_ID[id];
                     if (!it) return null;
                     return (
                       <Chip
@@ -364,7 +284,8 @@ export function SubjectPicker({ draftMcrId, initialSelectedIds }: SubjectPickerP
                     </svg>
                     <div>
                       <span className="text-stone-900">{it.name}</span>
-                      {ON_REGISTRATION.has(it.id) && (
+                      <span className="ml-1.5 text-[10px] text-stone-400">#{it.oclCode}</span>
+                      {ON_REGISTRATION_IDS.has(it.id) && (
                         <span className="ml-1.5 text-[10px] font-medium text-emerald-700">on reg</span>
                       )}
                     </div>

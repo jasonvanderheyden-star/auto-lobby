@@ -48,9 +48,11 @@ export default async function SubjectsPage({ params }: PageProps) {
     year: "numeric",
   });
 
-  type SubjectRow = { subjectId: string; source: string };
+  type SubjectRow = { oclCode?: number; source: string };
   const currentSubjects = (draft.subjects ?? []) as SubjectRow[];
-  const initialSelectedIds = currentSubjects.map((s) => s.subjectId);
+  const initialSelectedOclCodes = currentSubjects
+    .map((s) => Number(s.oclCode))
+    .filter((code) => !isNaN(code) && code > 0);
 
   const internalAttendee = m.attendees.find((a) => a.isInternal);
   const dpohAttendees = m.attendees.filter((a) => a.isDpoh === true);
@@ -133,7 +135,7 @@ export default async function SubjectsPage({ params }: PageProps) {
         </section>
 
         {/* Subject picker */}
-        <SubjectPicker draftMcrId={draft.id} initialSelectedIds={initialSelectedIds} />
+        <SubjectPicker draftMcrId={draft.id} initialSelectedOclCodes={initialSelectedOclCodes} />
       </main>
     </div>
   );

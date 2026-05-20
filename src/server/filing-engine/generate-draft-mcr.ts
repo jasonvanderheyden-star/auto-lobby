@@ -1,23 +1,15 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-
-// Hardcoded MVP defaults. Future: read from OrgProfile.defaultSubjects.
-const DEFAULT_SUBJECTS_FOR_DEEP_SKY = [
-  "Environment",
-  "Climate Change",
-  "Energy",
-  "Science and Technology",
-  "Industry",
-];
+import { DEFAULT_OCL_CODES } from "@/lib/ocl-subjects";
 
 export interface DraftMcrInput {
   meetingId: string;
-  subjects: Array<{ subjectId: string; source: string }>;
+  subjects: Array<{ oclCode: number; source: string }>;
   institutionId: string | null;
   namedLobbyists: Array<{ name: string; email: string }>;
   description: string | null;
   descriptionSource: string | null;
-  provenance: Record<string, { value: unknown; source: string; confidence: number }>;
+  provenance: Record<string, { value: unknown; source: string; confidence: number; note?: string }>;
 }
 
 export interface GenerateResult {
@@ -33,9 +25,9 @@ export interface GenerateResult {
  * pre-filled value came from per the description-source levels in CLAUDE.md.
  *
  * Subject priority:
- *   1. DpohSubjectPreference — user previously confirmed subjects for this DPOH
+ *   1. DpohSubjectPreference — user previously confirmed OCL codes for this DPOH
  *   2. (future) AI inference from meeting title / notes
- *   3. Org-profile defaults (level-0)
+ *   3. Org-profile defaults (level-0): Environment 13, Climate 41, Energy 11, Science 30, Industry 20
  */
 export async function generateDraftMcr(detectedMeetingId: string): Promise<GenerateResult> {
   const meeting = await db.detectedMeeting.findUniqueOrThrow({
@@ -64,8 +56,8 @@ export async function generateDraftMcr(detectedMeetingId: string): Promise<Gener
     .filter((a) => a.isDpoh === true && a.resolvedOfficialId)
     .map((a) => a.resolvedOfficialId!);
 
-  let subjects: Array<{ subjectId: string; source: string }>;
-  let subjectsProvenance: { value: unknown; source: string; confidence: number };
+  let subjects: Array<{ oclCode: number; source: string }>;
+  let subjectsProvenance: DraftMcrInput["provenance"][string];
 
   if (dpohOfficialIds.length > 0) {
     const preferences = await db.dpohSubjectPreference.findMany({
@@ -73,27 +65,26 @@ export async function generateDraftMcr(detectedMeetingId: string): Promise<Gener
         tenantId: meeting.tenantId,
         publicOfficialId: { in: dpohOfficialIds },
       },
-      select: { subjectIds: true, publicOfficialId: true, publicOfficial: { select: { name: true } } },
+      select: { oclCodes: true, publicOfficial: { select: { name: true } } },
     });
 
     if (preferences.length > 0) {
-      // Union across multiple DPOHs if needed
-      const unionIds = [...new Set(preferences.flatMap((p) => p.subjectIds))];
+      // Union OCL codes across multiple DPOHs
+      const unionCodes = [...new Set(preferences.flatMap((p) => p.oclCodes.map(Number)))];
       const dpohNames = preferences.map((p) => p.publicOfficial.name).join(", ");
-      subjects = unionIds.map((id) => ({ subjectId: id, source: "dpoh-preference" }));
+      subjects = unionCodes.map((code) => ({ oclCode: code, source: "dpoh-preference" }));
       subjectsProvenance = {
         value: subjects,
         source: "dpoh-preference",
         confidence: 0.9,
-        // @ts-expect-error extra field for UI display
         note: `Previously confirmed by user for meetings with ${dpohNames}`,
       };
     } else {
-      subjects = DEFAULT_SUBJECTS_FOR_DEEP_SKY.map((s) => ({ subjectId: s, source: "level-0" }));
+      subjects = DEFAULT_OCL_CODES.map((code) => ({ oclCode: code, source: "level-0" }));
       subjectsProvenance = { value: subjects, source: "level-0", confidence: 0.6 };
     }
   } else {
-    subjects = DEFAULT_SUBJECTS_FOR_DEEP_SKY.map((s) => ({ subjectId: s, source: "level-0" }));
+    subjects = DEFAULT_OCL_CODES.map((code) => ({ oclCode: code, source: "level-0" }));
     subjectsProvenance = { value: subjects, source: "level-0", confidence: 0.6 };
   }
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
+import { getSubjectName } from "@/lib/ocl-subjects";
 import { confirmDpohAction, excludeMeetingAction } from "../_actions";
 
 function SubmitButton({
@@ -34,7 +35,8 @@ type Reason = {
   citation: string | null;
 };
 type Institution = { name: string; acronym: string | null } | null;
-type Subject = { subjectId: string; source: string };
+// Supports both legacy {subjectId} rows and current {oclCode} rows
+type Subject = { oclCode?: number; subjectId?: string; source: string };
 
 type RoleHint = { role: string; isDpoh: boolean };
 
@@ -195,16 +197,21 @@ export function FilingRow({
                 </Link>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {(draft.subjects ?? []).map((s) => (
-                  <span
-                    key={s.subjectId}
-                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border bg-emerald-50 text-emerald-900 border-emerald-200"
-                    title={`Source: ${s.source}`}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
-                    {s.subjectId}
-                  </span>
-                ))}
+                {(draft.subjects ?? []).map((s, i) => {
+                  const code = s.oclCode ? Number(s.oclCode) : undefined;
+                  const display = code ? getSubjectName(code) : (s.subjectId ?? `Subject ${i + 1}`);
+                  const key = code ?? s.subjectId ?? i;
+                  return (
+                    <span
+                      key={key}
+                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border bg-emerald-50 text-emerald-900 border-emerald-200"
+                      title={`OCL code: ${code ?? "legacy"} · Source: ${s.source}`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
+                      {display}
+                    </span>
+                  );
+                })}
               </div>
               <div className="mt-1.5 text-[11px] text-stone-500">From org-profile defaults (level-0).</div>
             </div>

@@ -294,7 +294,7 @@ model DpohSubjectPreference {
   id               String   @id @default(cuid())
   tenantId         String
   publicOfficialId String
-  subjectIds       String[] // array of subject IDs from the picker
+  oclCodes         String[] // OCL canonical codes stored as strings, e.g. ["41","11","13"]
   lastConfirmedAt  DateTime @updatedAt
   confirmedBy      String   // userId
 
