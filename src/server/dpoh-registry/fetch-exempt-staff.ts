@@ -265,10 +265,23 @@ async function fetchStaffForMinister(
 
   const allPeople = [...topLevel];
 
-  // Browse sub-orgs one level deep (no further recursion)
+  // Browse sub-orgs one level deep
   for (const subDn of subOrgDns) {
     const { people: subPeople } = await browseOrgUnit(subDn);
     allPeople.push(...subPeople);
+  }
+
+  // If first level returned only sub-orgs and no people, go one level deeper.
+  // Handles ministerial offices where staff are nested two levels deep (e.g. Finance).
+  if (allPeople.length === 0 && subOrgDns.length > 0) {
+    for (const subDn of subOrgDns) {
+      const { people: subPeople, subOrgDns: deeperDns } = await browseOrgUnit(subDn);
+      allPeople.push(...subPeople);
+      for (const deepDn of deeperDns) {
+        const { people: deepPeople } = await browseOrgUnit(deepDn);
+        allPeople.push(...deepPeople);
+      }
+    }
   }
 
   if (allPeople.length > MAX_STAFF_PER_OFFICE) {
