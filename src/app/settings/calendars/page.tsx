@@ -5,6 +5,7 @@ import { getTenantContext } from "@/server/tenant/context";
 import { db } from "@/lib/db";
 import { relativeTime } from "@/lib/relative-time";
 import { syncCalendarNow } from "@/server/calendar/actions";
+import { SyncNowButton } from "./sync-now-button";
 
 export const metadata = { title: "Calendar Connections — Auto Lobby" };
 
@@ -178,12 +179,7 @@ export default async function CalendarSettingsPage({ searchParams }: PageProps) 
                             {conn.status === "active" && (
                               <form action={syncCalendarNow}>
                                 <input type="hidden" name="connectionId" value={conn.id} />
-                                <button
-                                  type="submit"
-                                  className="rounded-md border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50"
-                                >
-                                  Sync now
-                                </button>
+                                <SyncNowButton />
                               </form>
                             )}
                             {(conn.status === "token_refresh_failed" || conn.status === "disconnected") && (
