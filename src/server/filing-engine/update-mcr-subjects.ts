@@ -26,7 +26,18 @@ export async function updateMcrSubjectsAction(formData: FormData) {
 
   const draft = await db.draftMcr.findFirst({
     where: { id: draftMcrId, meeting: { tenantId: ctx.tenantId } },
-    select: { id: true, provenance: true },
+    select: {
+      id: true,
+      provenance: true,
+      meeting: {
+        select: {
+          id: true,
+          attendees: {
+            select: { resolvedOfficialId: true, name: true, isDpoh: true },
+          },
+        },
+      },
+    },
   });
   if (!draft) throw new Error("Draft not found");
 
@@ -42,13 +53,43 @@ export async function updateMcrSubjectsAction(formData: FormData) {
     data: { subjects, provenance: newProvenance },
   });
 
+  // Upsert a DpohSubjectPreference for each confirmed DPOH on this meeting
+  const dpohAttendees = draft.meeting.attendees.filter(
+    (a) => a.isDpoh === true && a.resolvedOfficialId,
+  );
+
+  for (const attendee of dpohAttendees) {
+    await db.dpohSubjectPreference.upsert({
+      where: {
+        tenantId_publicOfficialId: {
+          tenantId: ctx.tenantId,
+          publicOfficialId: attendee.resolvedOfficialId!,
+        },
+      },
+      create: {
+        tenantId: ctx.tenantId,
+        publicOfficialId: attendee.resolvedOfficialId!,
+        subjectIds: selectedIds,
+        confirmedBy: userId,
+      },
+      update: {
+        subjectIds: selectedIds,
+        confirmedBy: userId,
+      },
+    });
+  }
+
   await db.auditEvent.create({
     data: {
       tenantId: ctx.tenantId,
       actor: userId,
       action: "subjects-updated",
       subject: draftMcrId,
-      payload: { selectedIds, count: selectedIds.length },
+      payload: {
+        selectedIds,
+        count: selectedIds.length,
+        dpohPreferencesUpdated: dpohAttendees.length,
+      },
     },
   });
 

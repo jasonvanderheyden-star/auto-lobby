@@ -27,13 +27,14 @@ model Tenant {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  orgProfile          OrgProfile?
-  employees           Employee[]
-  calendarConnections CalendarConnection[]
-  rawCalendarEvents   RawCalendarEvent[]
-  detectedMeetings    DetectedMeeting[]
-  hoursLedger         HoursLedgerEntry[]
-  auditEvents         AuditEvent[]
+  orgProfile             OrgProfile?
+  employees              Employee[]
+  calendarConnections    CalendarConnection[]
+  rawCalendarEvents      RawCalendarEvent[]
+  detectedMeetings       DetectedMeeting[]
+  hoursLedger            HoursLedgerEntry[]
+  auditEvents            AuditEvent[]
+  dpohSubjectPreferences DpohSubjectPreference[]
 }
 
 /// The seed crystal for all pre-fill logic. Set once at onboarding,
@@ -196,6 +197,8 @@ model PublicOfficial {
   effectiveUntil DateTime?
   createdAt      DateTime            @default(now())
 
+  subjectPreferences DpohSubjectPreference[]
+
   @@index([email])
   @@index([institutionId])
 }
@@ -281,6 +284,25 @@ model DraftMcr {
   lrsScreenshot     String? // evidence URL
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+}
+
+// ============================================================
+// DPOH subject-matter learning loop
+// ============================================================
+
+model DpohSubjectPreference {
+  id               String   @id @default(cuid())
+  tenantId         String
+  publicOfficialId String
+  subjectIds       String[] // array of subject IDs from the picker
+  lastConfirmedAt  DateTime @updatedAt
+  confirmedBy      String   // userId
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id])
+  publicOfficial PublicOfficial @relation(fields: [publicOfficialId], references: [id])
+
+  @@unique([tenantId, publicOfficialId])
+  @@index([tenantId])
 }
 
 // ============================================================
