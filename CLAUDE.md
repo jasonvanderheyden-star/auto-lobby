@@ -4,13 +4,26 @@ Read this file first every session.
 
 ## What this is
 
-Automated Canadian lobbyist compliance. Federal (OCL) first, provincial + municipal later. Multi-tenant B2B SaaS; **Deep Sky** (climate / direct-air-capture) is the first user.
+**Auto Lobby is the first product in a four-product Government Interface Platform.** The platform automates every touchpoint between a Canadian business and its government. "Auto Lobby" is a product name, not the parent brand — see `docs/Naming-Parked.md`.
 
-An agent runs continuously on the user's calendar, detects meetings with Canadian federal public officials, classifies whether each meeting is reportable lobbying, drafts the Monthly Communication Report (MCR) with all fields pre-populated, and surfaces one action once per month: the CEO certifies the batch, and the system submits via a supervised GCKey session to the Lobbyists Registration System (LRS). Target friction: ≤ 5 minutes of CEO time per month.
+**The four products (in build order):**
+1. **Lobbying Compliance** (Auto Lobby) — detect calendar meetings with DPOHs, classify reportable lobbying, draft and certify Monthly Communication Reports, submit to LRS. *Current product — Phase 3 complete.*
+2. **Government Intelligence & Monitoring** — Canada Gazette, OiC, committee proceedings, DPOH appointment alerts, consultation submission drafting, OCL competitive intelligence. *Next product after Compliance launch.*
+3. **Grants & Funding Intelligence** — eligibility matching across 600+ federal programs, application draft generation, deadline tracking. *After Intelligence.*
+4. **Regulatory & Permitting Roadmap** — multi-agency permitting matrix, sequenced roadmap with dependencies, condition tracking. *After Grants.*
+
+**→ See `docs/Platform-Roadmap.md` for the full roadmap, phase table, sector priorities, and GTM strategy. Read it before making any architectural decisions.**
+
+Auto Lobby in detail: An agent runs continuously on the user's calendar, detects meetings with Canadian federal public officials, classifies whether each meeting is reportable lobbying, drafts the Monthly Communication Report (MCR) with all fields pre-populated, and surfaces one action once per month: the CEO certifies the batch, and the system submits via a supervised GCKey session to the Lobbyists Registration System (LRS). Target friction: ≤ 5 minutes of CEO time per month.
 
 ## Read these before writing code
 
-- `Auto-Lobby-MVP-Roadmap.md` — full product plan, roadmap, monetization, competitive context
+**Platform strategy (read first for any architectural or product decision):**
+- `docs/Platform-Roadmap.md` — **canonical product roadmap, phase table, sector priorities, GTM** ← start here
+- `docs/Platform-Roadmap-Strategy.docx` — formatted external version of the same (for sharing)
+
+**Auto Lobby product detail:**
+- `Auto-Lobby-MVP-Roadmap.md` — original product plan, monetization, competitive context
 - `docs/Detection-Pipeline.md` — pipeline architecture, data model, anti-over-reporting rules
 - `prototypes/Monthly-Certification.html` — the primary UX (the "one button per month" experience)
 - `prototypes/File-Meeting.html` — subject-matter picker
@@ -19,8 +32,9 @@ An agent runs continuously on the user's calendar, detects meetings with Canadia
 
 Parked ideas (don't build, but check before making structural decisions that might foreclose them):
 
-- `docs/Naming-Parked.md` — product name decision (resume after Phase 0 ships green)
-- `docs/Gov-Platform-Parked.md` — potential second product for commissioner's offices (resume after ≥3 paying federal customers)
+- `docs/Naming-Parked.md` — product name decision (resume once ≥1 paying customer is under contract)
+- `docs/Platform-Vision-Parked.md` — original platform vision and architectural implications (superseded by `docs/Platform-Roadmap.md` for product decisions, but contains useful naming + brand notes)
+- `docs/Gov-Platform-Parked.md` — potential product for commissioner's offices (resume after ≥3 paying federal customers)
 - `docs/Agency-Motion-Parked.md` — GR-firm / law-firm white-label GTM motion (architectural implications are *not* parked — see non-negotiable #7 below)
 - `docs/Calendar-Confirm-UX-Parked.md` — per-meeting attendee confirmation in the calendar app itself (Phase 4–5)
 
@@ -203,6 +217,90 @@ Goal: surface classified meetings in a certification-ready UI, allow the CEO to 
 
 **Phase 3 is complete.**
 
+## Phase 4 — LRS Playwright submission harness (complete)
+
+Goal: submit certified MCRs to the Lobbyists Registration System (lobbycanada.gc.ca) via a supervised headed Playwright browser. The registrant authenticates manually — we never store credentials.
+
+**What shipped:**
+
+- `src/server/submission/types.ts` — `LrsSubmissionPayload`, `LrsDpoh`, `LrsSubjectDetail`, `SubmissionResult` types.
+- `src/server/submission/prepare-submission.ts` — `prepareSubmissions(tenantId)` — queries certified-but-not-submitted `DraftMcr` rows, resolves DPOHs via `PublicOfficial`, splits names (last-space rule), builds institution labels as "Name (ACRONYM)", returns `LrsSubmissionPayload[]`.
+- `src/server/submission/lrs-playwright.ts` — `submitBatchToLrs(payloads, onStatus)` — opens headed Chromium, waits for user login, walks each MCR through the LRS pre-flight → date modal → DPOH modal(s) → subject checkboxes → review → Certify modal flow. Stops batch on first failure.
+- `scripts/submit-to-lrs.ts` — runnable entry point. Reads `TENANT_ID` from env, calls `prepareSubmissions`, calls `submitBatchToLrs`, writes `submittedAt` + `lrsReceiptId` to `DraftMcr`, appends an `AuditEvent`.
+- `src/app/filings/_actions.ts` `certifyBatchAction` — updated to include `nextStep` hint in the audit payload pointing to the submit script.
+
+**Running LRS submission:**
+
+```bash
+# Ensure Playwright Chromium is installed (one-time):
+npx playwright install chromium
+
+# Submit all certified, unsubmitted MCRs for a tenant:
+TENANT_ID=<tenant-id> npm run lrs:submit
+```
+
+Or directly:
+```bash
+TENANT_ID=<id> npx dotenv-cli -e .env.local -- npx tsx scripts/submit-to-lrs.ts
+```
+
+**What the registrant does each month:**
+1. Review and certify in `/filings` (web app).
+2. Run `npm run lrs:submit` — headed Chromium opens lobbycanada.gc.ca.
+3. Sign in to LRS in the browser (username → Continue → password → Sign in).
+4. For each MCR, enter LRS username + password at the Certify modal, click Certify.
+5. The script detects the green success banner, writes the communication number to `DraftMcr.lrsReceiptId`, and moves on.
+
+**Non-negotiables honoured:**
+- Headed browser only — `headless: false` is hardcoded.
+- We never auto-click Certify — user must do it themselves.
+- No credentials stored anywhere.
+
+**Known gaps / Phase 5 polish:**
+- Subject matter checkbox matching is by position (all checked) in Phase 4. In Phase 5 we will match by OCL code against the registration's actual checkbox labels.
+- The government institution dropdown selector falls back to name-only (strips acronym) if the exact "Name (ACRONYM)" label doesn't match — manual verification recommended on first run.
+- If the LRS HTML changes, the selectors in `lrs-playwright.ts` may need updates. The `fillField()` helper uses three fallback strategies to reduce fragility.
+
+**Phase 4 is complete.**
+
+## Phase 5 prep — multi-tenant launch readiness (in progress)
+
+Goal: close architectural gaps and build the infrastructure required to charge customers and onboard a second tenant.
+
+**What shipped:**
+
+- **Chunk 5a**: Dedicated audit-log service at `src/server/audit-log/append.ts` — exports `appendAuditEvent()`, typed `AuditAction` union, `ActorRole` union, optional `tx` param for use inside Prisma transactions. `AuditEvent` schema extended with `actorRole` (nullable) and `onBehalfOfTenantId` (nullable) for agency GTM. Migration `20260522145845_add_audit_actor_role`. All inline `db.auditEvent.create()` calls replaced throughout `src/`. **Run `npx prisma migrate dev` + `npx prisma generate` locally before next dev session.**
+
+- **Chunk 5b** (`pending migrate`): Fuzzy name matching — new `src/server/dpoh-registry/lookup-official.ts` extracts and upgrades both lookup functions. Two-pass strategy: (1) canonicalize via `canonicalizeName()`, (2) exact case-insensitive match, (3) pg_trgm `similarity() >= 0.45` fallback for accents/initials/middle names. New `DpohMatchSource` value `"name-fuzzy-at-institution"` for provenance. Fuzzy hits get `confidence × 0.85`. Migration `20260522175735_enable_pg_trgm` adds the extension + GIN index. **Run `npx prisma migrate deploy` (or `migrate dev`) locally, then `pnpm typecheck`.**
+
+**What's next in Phase 5 prep:**
+- Chunk 5c: Annual registration renewal automation
+- Chunk 5d: Tenant entitlements groundwork (for multi-product platform)
+
+## Phase 6 — Two-motion productization (built 2026-06-10, pending local migration)
+
+Firms are piloting — the agency motion is **unparked**. The platform now supports two sequences:
+
+**Use case 1 — In-house tenant** (Deep Sky model): multiple calendar contributors, role-gated certification. `TenantMember` carries additive roles (`admin | contributor | reviewer | certifier`). Only a `certifier` (the Responsible Officer) can certify; reviewers triage. First sign-in to a pre-roles tenant bootstraps that user with full roles (audited); invited Clerk org members are auto-provisioned WITHOUT certifier.
+
+**Use case 2 — Firm/agency**, three sub-flows:
+- **2a Consultant filings**: consultant calendars live in the firm's own tenant (`isAgencyOwnTenant`). `Engagement` models the undertaking (firm × client × registration) with attribution signals (clientDomains, subjectKeywords, keyInstitutions). The suggestion engine (`src/server/engagements/suggest-engagement.ts`) proposes a client per meeting (threshold ≥ 0.5, margin ≥ 0.2, full per-signal provenance in `engagement-suggested` audit events); the consultant confirms in /filings. **Auto-suggested attributions never enter a filing batch** (anti-over-reporting). Batches group by (consultant, engagement); `certifyConsultantBatchAction` requires the consultant of record.
+- **2b Managed clients**: agency staff (AgencyMember admin/staff) prepare drafts on the client tenant (`actorKind: "agency"` in TenantContext — mapped to reviewer/admin, **never certifier**), then route for certification: single-use 256-bit token (SHA-256 hash stored, 14-day TTL), public page at `/certify/[token]` where the client RO reviews, attests, types their name, certifies. Agency workspace at `/agency`. No transactional email yet — the staffer copies the link.
+- **2c Firm's own filing**: ordinary in-house tenant owned by the agency.
+
+**Calendar providers**: Google + Microsoft 365 (Entra OAuth at `/api/oauth/microsoft/*`, Graph `calendarView/delta`, refresh-token rotation handled). Provider dispatch in `src/server/calendar/sync.ts` via `SYNC_PROVIDERS` record.
+
+**New schema** (chunk 6a): `Agency`, `AgencyMember`, `TenantMember`, `Engagement`; `Tenant.agencyId/isAgencyOwnTenant` + branding fields; `DetectedMeeting.engagementId/engagementSource/engagementConfidence`; `DraftMcr` routing fields. **Run locally before next dev session:** `npx prisma migrate dev --name agency_roles_engagements_routing && npx prisma generate && pnpm typecheck && pnpm test`.
+
+**QA state**: typecheck clean against the new client (verified out-of-tree); 150/150 vitest tests pass (59 new under `tests/` covering role gates, attribution thresholds, token single-use, batch exclusion of unconfirmed attributions, context bootstrap). QA seed: `npm run qa:seed` (idempotent, upsert-based — never truncates shared tables) creates the Maple Leaf Strategies demo firm + NorthVolt managed client + engagements + synthetic events run through the real classifier. Env: `SEED_CLERK_USER_ID`, `QA_FIRM_ORG_ID`, `QA_CLIENT_ORG_ID`.
+
+**Known gaps from Phase 6 QA (not yet fixed):**
+- `confirmDpohAction` overwrites registry-sourced `PublicOfficial` rows in place (destroys geds/parliament provenance); reset then deletes the row. Should write a tenant-scoped override instead.
+- `certifyRoutedBatchAction` reports the pre-read count, not the conditional update's `result.count` (tiny TOCTOU window); same pattern in `routeBatchForCertification`.
+- `MonthGroup` deep-clones drafts via `JSON.parse(JSON.stringify())` per row.
+- Consultant LRS submission uses the in-house Playwright walk; the consultant MCR form differs — needs its own selector pass before a real consultant filing.
+- Transactional email for routed certification (deliberate: no new SaaS dependency without approval).
+
 ## Known gaps
 
 Not deferred scope — real gaps that should be closed before the relevant phase is considered fully done.
@@ -211,20 +309,25 @@ Not deferred scope — real gaps that should be closed before the relevant phase
 
 2. **Champagne (Finance) exempt staff returns 0.** The Finance ministerial office org structure in GEDS nests staff deeper than one sub-org level. The current one-level traversal in `fetch-exempt-staff.ts` doesn't reach them. Fix: extend `fetchStaffForMinister` to traverse two levels deep for offices that return 0 people at the first level.
 
-3. **`src/server/audit-log/` is a placeholder.** Audit trail writes happen inline in `src/server/filing-engine/` and server actions. No dedicated append-only audit service exists. Acceptable for single-tenant dev; extract before multi-tenant launch.
+3. ~~**`src/server/audit-log/` is a placeholder.**~~ **CLOSED** — `appendAuditEvent()` service live in `src/server/audit-log/append.ts`. All inline writes replaced. `actorRole` + `onBehalfOfTenantId` fields added to `AuditEvent` for agency GTM.
 
 4. **`src/server/submission/` is unbuilt.** The supervised Playwright-against-LRS submission harness is Phase 4+ scope and has not been started.
 
-5. **Name matching is exact (case-insensitive), not fuzzy.** `lookupOfficialByNameAtInstitution` uses `name: { equals: name, mode: "insensitive" }`. Calendar display names are messy — "The Hon. Jonathan Wilkinson" vs. "Jonathan Wilkinson", initials, French accents, hyphenated surnames. This causes false negatives (person IS in the registry but doesn't match). The 19 residual needs-info events are partly attributable to this. Fuzzy name matching (trigram similarity or a normalisation pre-pass) is a future improvement.
+5. ~~**Name matching is exact (case-insensitive), not fuzzy.**~~ **CLOSED** — `lookup-official.ts` now runs a two-pass strategy: exact match first, then pg_trgm similarity fallback (≥ 0.45) for accents, initials, and middle name variants. Fuzzy matches tagged `"name-fuzzy-at-institution"` in provenance with confidence × 0.85. The 19 residual needs-info events should decrease after the migration is applied and a backfill re-run is done.
 
-**What's next:** Phase 4 (Playwright submission harness) unless Phase 3 polish is prioritized first.
+**What's next:** Phase 4 — LRS Playwright submission harness. Blocked on LRS web form screenshots from Jason's law firm. When screenshots arrive: map form fields, write Playwright selectors, build supervised GCKey/LRS submission harness in `src/server/submission/`.
 
-## Out of scope
+After Phase 4: Phase 5 (multi-tenant launch + agency motion), then Phase 5.5 (Product 02 — Government Intelligence). See `docs/Platform-Roadmap.md` for the full sequence.
 
-- Provincial + municipal filing integrations (deferred to Phase 7)
-- Legislative intelligence / CRM / lobbyist-relationship tracking (stay in compliance lane)
+## Out of scope (current platform roadmap)
+
 - Grassroots / constituent engagement
+- Lobbyist relationship CRM or BD pipeline management
+- Procurement compliance / ITB offset management
 - Mobile app
+- International markets (US FARA, UK register — future optionality only)
+
+*Note: "Legislative intelligence" is **not** out of scope — it is Product 02 (Government Intelligence & Monitoring), planned for Phase 5.5. The prior framing is superseded by `docs/Platform-Roadmap.md`.*
 
 ## Ask before doing
 
@@ -247,4 +350,8 @@ ANTHROPIC_API_KEY=
 INNGEST_EVENT_KEY=
 INNGEST_SIGNING_KEY=
 SENTRY_DSN=
+MICROSOFT_CLIENT_ID=       # Entra ID app registration (optional until M365 connect is enabled)
+MICROSOFT_CLIENT_SECRET=
+MICROSOFT_TENANT=common    # Entra authority tenant; "common" = any org + personal accounts
+MICROSOFT_REDIRECT_URI=    # e.g. https://<host>/api/oauth/microsoft/callback
 ```
