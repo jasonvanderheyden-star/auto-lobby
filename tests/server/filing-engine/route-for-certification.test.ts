@@ -171,6 +171,29 @@ describe("routeBatchForCertification", () => {
     );
   });
 
+  it("excludes auto-suggested (unconfirmed) attributions from the routed batch", async () => {
+    // Anti-over-reporting (#5): a guessed client attribution must never be
+    // routed. The query allow-lists null (no attribution / managed client)
+    // and confirmed/manual (human-signed); "auto-suggested" is excluded by
+    // omission.
+    mockDb.draftMcr.findMany.mockResolvedValue([]);
+    await routeBatchForCertification(routeInput());
+
+    const where = mockDb.draftMcr.findMany.mock.calls[0]![0]!.where as {
+      meeting: { OR: Array<Record<string, unknown>> };
+    };
+    const allowed = where.meeting.OR;
+    expect(allowed).toEqual(
+      expect.arrayContaining([
+        { engagementSource: null },
+        { engagementSource: { in: ["confirmed", "manual"] } },
+      ]),
+    );
+    // The allow-list must never permit an unconfirmed attribution.
+    const json = JSON.stringify(allowed);
+    expect(json).not.toContain("auto-suggested");
+  });
+
   it("rejects malformed input (month, email)", async () => {
     await expect(
       routeBatchForCertification({ ...routeInput(), month: "2026-13" }),

@@ -27,6 +27,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { appendAuditEvent, type ActorRole } from "@/server/audit-log/append";
+import { CONFIRMED_ENGAGEMENT_SOURCES } from "@/server/filing-engine/consultant-batches";
 
 export const ROUTING_TOKEN_TTL_DAYS = 14;
 
@@ -85,6 +86,18 @@ export async function routeBatchForCertification(
         tenantId,
         classification: "lobbying",
         startAt: { gte: start, lt: end },
+        // Anti-over-reporting (non-negotiable #5): an auto-suggested
+        // (unconfirmed) client attribution must never enter a filing batch.
+        // Routing places drafts behind a certification link the client RO
+        // signs, so it IS a filing batch. Allow-list, not deny-list: only a
+        // human-signed attribution (confirmed/manual) OR no attribution at
+        // all (null — the normal managed-client case, since the suggestion
+        // engine only runs on agency-own tenants) is routable. Any other
+        // engagementSource is excluded by omission.
+        OR: [
+          { engagementSource: null },
+          { engagementSource: { in: [...CONFIRMED_ENGAGEMENT_SOURCES] } },
+        ],
       },
       certifiedAt: null,
     },
