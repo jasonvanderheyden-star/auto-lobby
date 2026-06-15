@@ -17,24 +17,156 @@ datasource db {
 // Tenancy
 // ============================================================
 
+/// A GR firm / law firm running the agency GTM motion: manages client
+/// tenants (white-label) and/or files consultant MCRs for clients.
+/// The firm's own in-house lobbying lives in a normal Tenant flagged
+/// isAgencyOwnTenant. See docs/Agency-Motion-Parked.md.
+model Agency {
+  id         String  @id @default(cuid())
+  /// Clerk Organization ID of the firm itself, when the firm signs in as an org.
+  clerkOrgId String? @unique
+  name       String
+
+  // White-label defaults — cascade to client tenants unless overridden there.
+  logoUrl      String?
+  brandColor   String?
+  productName  String?
+  supportEmail String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenants     Tenant[]
+  members     AgencyMember[]
+  engagements Engagement[]
+}
+
+enum AgencyMemberRole {
+  admin // manages clients, billing, members
+  staff // prepares drafts on client tenants
+  consultant // registered consultant lobbyist — certifies own consultant MCRs
+}
+
+model AgencyMember {
+  id          String           @id @default(cuid())
+  agencyId    String
+  agency      Agency           @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  clerkUserId String
+  email       String
+  name        String?
+  role        AgencyMemberRole @default(staff)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  engagements Engagement[] // undertakings this consultant is registrant for
+
+  @@unique([agencyId, clerkUserId])
+  @@index([clerkUserId])
+}
+
 model Tenant {
   id             String   @id @default(cuid())
   clerkOrgId     String?  @unique // Clerk Organization ID — stable join key for webhook upserts
   name           String
   industry       String?
   jurisdiction   String   @default("federal") // federal | provincial | municipal | multi
-  registrationId String? // OCL registration ID if active
-  createdAt      DateTime @default(now())
+  registrationId        String?   // OCL registration ID if active
+  registrationExpiresAt DateTime? // annual renewal deadline under the Lobbying Act
+
+  /// Agency GTM (non-negotiable #7): set when this tenant is managed by a firm.
+  agencyId         String?
+  agency           Agency? @relation(fields: [agencyId], references: [id])
+  /// True for the firm's own in-house filing tenant (use case 2c).
+  isAgencyOwnTenant Boolean @default(false)
+
+  // White-label branding hooks — nullable, always rendered through variables.
+  // Fall back to agency defaults, then platform defaults.
+  logoUrl      String?
+  brandColor   String?
+  productName  String?
+  supportEmail String?
+
+  createdAt             DateTime  @default(now())
   updatedAt      DateTime @updatedAt
 
   orgProfile             OrgProfile?
   employees              Employee[]
+  members                TenantMember[]
   calendarConnections    CalendarConnection[]
   rawCalendarEvents      RawCalendarEvent[]
   detectedMeetings       DetectedMeeting[]
   hoursLedger            HoursLedgerEntry[]
   auditEvents            AuditEvent[]
   dpohSubjectPreferences DpohSubjectPreference[]
+  engagementsAsClient    Engagement[]            @relation("EngagementClientTenant")
+
+  @@index([agencyId])
+}
+
+enum TenantMemberRole {
+  admin // manage settings, members, calendar connections
+  contributor // calendar is ingested; appears as named lobbyist
+  reviewer // triage drafts: confirm DPOHs, exclude, edit — cannot certify
+  certifier // the Responsible Officer — the only role that can certify a batch
+}
+
+/// App-level membership + permissions inside a tenant. Distinct from
+/// Employee (filing data: who is named on the registration). A person is
+/// usually both, joined by email. Roles are additive — the CEO at a small
+/// org is [admin, contributor, certifier].
+model TenantMember {
+  id          String             @id @default(cuid())
+  tenantId    String
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clerkUserId String?
+  email       String
+  name        String?
+  roles       TenantMemberRole[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([clerkUserId])
+}
+
+/// A consultant-lobbying undertaking: firm × client × registration.
+/// Drives meeting→client attribution (use case 2a). The client may or may
+/// not also be a managed Tenant in the platform.
+model Engagement {
+  id       String @id @default(cuid())
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  /// The registered consultant lobbyist — the registrant who certifies MCRs
+  /// for this undertaking.
+  consultantMemberId String?
+  consultantMember   AgencyMember? @relation(fields: [consultantMemberId], references: [id])
+
+  clientName     String
+  /// Set when the client is also a managed tenant on the platform.
+  clientTenantId String?
+  clientTenant   Tenant? @relation("EngagementClientTenant", fields: [clientTenantId], references: [id])
+
+  /// OCL consultant registration number for this undertaking, once registered.
+  registrationNum String?
+
+  // Attribution signals for the auto-suggest engine — all explainable.
+  clientDomains    String[] // attendee email domains that indicate this client
+  subjectKeywords  String[] // title/description keywords
+  subjects         String[] // OCL subject-matter codes from the registration
+  keyInstitutions  String[] // institution IDs routinely engaged for this client
+
+  status         String    @default("active") // active | ended
+  effectiveFrom  DateTime?
+  effectiveUntil DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  detectedMeetings DetectedMeeting[]
+
+  @@index([agencyId])
+  @@index([clientTenantId])
 }
 
 /// The seed crystal for all pre-fill logic. Set once at onboarding,
@@ -223,6 +355,16 @@ model DetectedMeeting {
   classification           String // lobbying | not-lobbying | needs-info
   classificationConfidence Float
   status                   String           @default("auto-drafted") // auto-drafted | ceo-certified | submitted | excluded | needs-info
+
+  // Consultant client attribution (use case 2a). Suggested by the engine
+  // with provenance; only a confirmed attribution feeds a filing batch.
+  engagementId         String?
+  engagement           Engagement? @relation(fields: [engagementId], references: [id])
+  /// auto-suggested | confirmed | manual — auto-suggested rows are never
+  /// batched into an MCR until a consultant confirms (anti-over-reporting).
+  engagementSource     String?
+  engagementConfidence Float?
+
   createdAt                DateTime         @default(now())
   updatedAt                DateTime         @updatedAt
 
@@ -277,13 +419,27 @@ model DraftMcr {
   descriptionSource String? // level-0 | level-1 | level-2 | level-3 | level-4 | manual
   // Full field-level provenance snapshot at time of draft
   provenance        Json // { field: { value, source, confidence } }
+
+  // Certification routing (use case 2b): agency staff prepare the draft,
+  // then route it to the client's Responsible Officer to certify.
+  // Never bypasses non-negotiable #1 — the RO always clicks Certify themselves.
+  routedForCertificationAt DateTime?
+  routedToEmail            String?
+  /// SHA-256 hash of the single-use routing token emailed to the RO. Raw token never stored.
+  routingTokenHash         String?
+  routingTokenExpiresAt    DateTime?
+  routedByUserId           String? // Clerk userId of the agency staffer who routed
+
   certifiedAt       DateTime?
   certifiedById     String? // Employee id of the senior officer
+  certifiedByUserId String? // Clerk userId of the certifier, when authenticated in-app
   submittedAt       DateTime?
   lrsReceiptId      String?
   lrsScreenshot     String? // evidence URL
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+
+  @@index([routingTokenHash])
 }
 
 // ============================================================
@@ -334,6 +490,8 @@ model AuditEvent {
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   actor     String // user email or "system"
+  actorRole          String?   // "registrant" | "lobbyist" | "agency-admin" | "system"
+  onBehalfOfTenantId String?   // set when an agency actor acts for a client tenant
   action    String // detected | classified | drafted | overridden | certified | submitted | acknowledged
   subject   String // entity id affected
   payload   Json?
