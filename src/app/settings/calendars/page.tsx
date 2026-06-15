@@ -14,17 +14,25 @@ interface PageProps {
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
-  access_denied: "You canceled the Google sign-in. No calendar connected.",
-  missing_params: "Google's response was missing required parameters. Please try again.",
+  access_denied: "You canceled the sign-in. No calendar connected.",
+  consent_required: "Consent wasn't granted. Please try again and approve the requested access.",
+  missing_params: "The provider's response was missing required parameters. Please try again.",
   expired_state: "Your sign-in session expired. Please try connecting again.",
   state_mismatch: "There was a security mismatch during sign-in. Please try again.",
   tenant_mismatch:
     "You switched organizations during sign-in. Please restart the connect flow from this organization.",
   exchange_failed:
-    "We couldn't complete the connection with Google. Please try again in a moment.",
+    "We couldn't complete the connection with your calendar provider. Please try again in a moment.",
   missing_scope:
     "Calendar read access wasn't granted. Please try again and keep the Calendar Read scope enabled at the consent screen.",
+  microsoft_not_configured:
+    "Microsoft 365 connections aren't configured yet on this deployment. Contact support.",
 };
+
+const PROVIDER_META = {
+  google: { badge: "G", label: "Google", startPath: "/api/oauth/google/start" },
+  microsoft365: { badge: "M", label: "Microsoft 365", startPath: "/api/oauth/microsoft/start" },
+} as const;
 
 const STATUS_STYLES = {
   active: { pill: "bg-emerald-100 text-emerald-800", label: "Active" },
@@ -72,8 +80,22 @@ export default async function CalendarSettingsPage({ searchParams }: PageProps) 
       "Something went wrong connecting your calendar. Please try again.")
     : null;
 
-  const connectLabel =
-    connections.length === 0 ? "Connect Google Calendar" : "Connect another calendar";
+  const connectButtons = (
+    <div className="flex flex-wrap items-center gap-2">
+      <a
+        href={PROVIDER_META.google.startPath}
+        className="inline-block rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-800"
+      >
+        Connect Google Calendar
+      </a>
+      <a
+        href={PROVIDER_META.microsoft365.startPath}
+        className="inline-block rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 transition hover:border-emerald-700 hover:text-emerald-700"
+      >
+        Connect Microsoft 365 Calendar
+      </a>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -100,13 +122,26 @@ export default async function CalendarSettingsPage({ searchParams }: PageProps) 
           ← Back to dashboard
         </Link>
 
+        {/* Settings tabs */}
+        <nav className="mt-6 flex gap-1 border-b border-stone-200">
+          <span className="px-4 py-2 text-sm font-medium text-stone-900 border-b-2 border-emerald-700 -mb-px">
+            Calendars
+          </span>
+          <Link
+            href="/settings/registration"
+            className="px-4 py-2 text-sm text-stone-500 hover:text-stone-900"
+          >
+            Registration
+          </Link>
+        </nav>
+
         {/* Page title */}
         <div className="mt-4">
           <h1 className="text-xl font-semibold text-stone-900">Calendar connections</h1>
           <p className="mt-1 text-sm text-stone-500">
-            Connect your Google Calendar so Auto Lobby can detect meetings with public officials.
-            We only request read access to your calendar — we never write events or modify your
-            calendar.
+            Connect your Google or Microsoft 365 calendar so Auto Lobby can detect meetings with
+            public officials. We only request read access to your calendar — we never write events
+            or modify your calendar.
           </p>
         </div>
 
@@ -130,12 +165,7 @@ export default async function CalendarSettingsPage({ searchParams }: PageProps) 
           {connections.length === 0 ? (
             <div className="flex flex-col items-center rounded-2xl border border-stone-200 bg-white px-6 py-14 text-center shadow-sm">
               <p className="text-sm text-stone-500">No calendars connected yet.</p>
-              <a
-                href="/api/oauth/google/start"
-                className="mt-5 inline-block rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-800"
-              >
-                {connectLabel}
-              </a>
+              <div className="mt-5">{connectButtons}</div>
             </div>
           ) : (
             <>
@@ -143,17 +173,25 @@ export default async function CalendarSettingsPage({ searchParams }: PageProps) 
                 <ul className="divide-y divide-stone-100">
                   {connections.map((conn) => {
                     const style = STATUS_STYLES[conn.status] ?? STATUS_STYLES.disconnected;
+                    const provider = PROVIDER_META[conn.provider] ?? PROVIDER_META.google;
                     return (
                       <li key={conn.id} className="flex items-center justify-between gap-4 px-5 py-4">
                         <div className="flex items-center gap-3 min-w-0">
                           {/* Provider badge */}
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-stone-50 text-xs font-bold text-stone-600">
-                            G
+                          <div
+                            title={provider.label}
+                            aria-label={provider.label}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-stone-50 text-xs font-bold text-stone-600"
+                          >
+                            {provider.badge}
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium text-stone-900 text-sm truncate">
                                 {conn.email}
+                              </span>
+                              <span className="shrink-0 rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">
+                                {provider.label}
                               </span>
                               <span
                                 className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${style.pill}`}
@@ -184,7 +222,7 @@ export default async function CalendarSettingsPage({ searchParams }: PageProps) 
                             )}
                             {(conn.status === "token_refresh_failed" || conn.status === "disconnected") && (
                               <a
-                                href="/api/oauth/google/start"
+                                href={provider.startPath}
                                 className="rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800"
                               >
                                 Reconnect
@@ -199,14 +237,7 @@ export default async function CalendarSettingsPage({ searchParams }: PageProps) 
                 </ul>
               </div>
 
-              <div className="mt-4">
-                <a
-                  href="/api/oauth/google/start"
-                  className="inline-block rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-800"
-                >
-                  {connectLabel}
-                </a>
-              </div>
+              <div className="mt-4">{connectButtons}</div>
             </>
           )}
         </section>

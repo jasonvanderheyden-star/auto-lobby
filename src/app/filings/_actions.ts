@@ -4,15 +4,23 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getTenantContext } from "@/server/tenant/context";
+import {
+  auditActorRole,
+  requireCertifier,
+  requireReviewer,
+} from "@/server/tenant/roles";
 import { classifyRawEvent } from "@/server/classifier/classify-raw-event";
 import { generateDraftMcr } from "@/server/filing-engine/generate-draft-mcr";
 import { buildResolverContext } from "@/server/dpoh-registry/resolve-attendee";
+import { appendAuditEvent } from "@/server/audit-log/append";
 
 export async function confirmDpohAction(formData: FormData) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
   const ctx = await getTenantContext();
   if (!ctx) throw new Error("No tenant");
+
+  requireReviewer(ctx);
 
   const meetingId = formData.get("meetingId");
   const attendeeEmail = formData.get("attendeeEmail");
@@ -85,14 +93,14 @@ export async function confirmDpohAction(formData: FormData) {
     await generateDraftMcr(m.id);
   }
 
-  await db.auditEvent.create({
-    data: {
-      tenantId: ctx.tenantId,
-      actor: userId,
-      action: "dpoh-confirmed",
-      subject: officialId,
-      payload: { meetingId, attendeeEmail, affectedMeetings: affected.length },
-    },
+  await appendAuditEvent({
+    tenantId: ctx.tenantId,
+    actor: userId,
+    actorRole: auditActorRole(ctx),
+    onBehalfOfTenantId: ctx.actorKind === "agency" ? ctx.tenantId : undefined,
+    action: "dpoh-confirmed",
+    subject: officialId,
+    payload: { meetingId, attendeeEmail, affectedMeetings: affected.length },
   });
 
   revalidatePath("/filings");
@@ -103,6 +111,8 @@ export async function excludeMeetingAction(formData: FormData) {
   if (!userId) throw new Error("Unauthorized");
   const ctx = await getTenantContext();
   if (!ctx) throw new Error("No tenant");
+
+  requireReviewer(ctx);
 
   const meetingId = formData.get("meetingId");
   const attendeeEmail = formData.get("attendeeEmail");
@@ -121,14 +131,14 @@ export async function excludeMeetingAction(formData: FormData) {
       data: { status: "excluded" },
     });
     await db.draftMcr.deleteMany({ where: { meetingId } });
-    await db.auditEvent.create({
-      data: {
-        tenantId: ctx.tenantId,
-        actor: userId,
-        action: "meeting-excluded",
-        subject: meetingId,
-        payload: { scope: "single", reason: "user-marked-not-lobbying" },
-      },
+    await appendAuditEvent({
+      tenantId: ctx.tenantId,
+      actor: userId,
+      actorRole: auditActorRole(ctx),
+      onBehalfOfTenantId: ctx.actorKind === "agency" ? ctx.tenantId : undefined,
+      action: "meeting-excluded",
+      subject: meetingId,
+      payload: { scope: "single", reason: "user-marked-not-lobbying" },
     });
     revalidatePath("/filings");
     return;
@@ -207,45 +217,138 @@ export async function excludeMeetingAction(formData: FormData) {
     }
   }
 
-  await db.auditEvent.create({
-    data: {
-      tenantId: ctx.tenantId,
-      actor: userId,
-      action: "non-dpoh-confirmed",
-      subject: officialId,
-      payload: { meetingId, attendeeEmail, affectedMeetings: affected.length },
-    },
+  await appendAuditEvent({
+    tenantId: ctx.tenantId,
+    actor: userId,
+    actorRole: auditActorRole(ctx),
+    onBehalfOfTenantId: ctx.actorKind === "agency" ? ctx.tenantId : undefined,
+    action: "non-dpoh-confirmed",
+    subject: officialId,
+    payload: { meetingId, attendeeEmail, affectedMeetings: affected.length },
   });
 
   revalidatePath("/filings");
 }
 
-export async function certifyBatchAction() {
+export async function resetAttendeeAction(formData: FormData) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
   const ctx = await getTenantContext();
   if (!ctx) throw new Error("No tenant");
 
+  requireReviewer(ctx);
+
+  const meetingId = formData.get("meetingId");
+  const attendeeEmail = formData.get("attendeeEmail");
+  if (typeof meetingId !== "string" || typeof attendeeEmail !== "string") {
+    throw new Error("Missing meetingId or attendeeEmail");
+  }
+
+  const attendee = await db.meetingAttendee.findFirst({
+    where: {
+      meeting: { id: meetingId, tenantId: ctx.tenantId },
+      email: attendeeEmail,
+    },
+    include: { meeting: { select: { institutionId: true } } },
+  });
+  if (!attendee || !attendee.meeting.institutionId) throw new Error("Attendee not found");
+
+  const official = await db.publicOfficial.findFirst({
+    where: {
+      name: { equals: attendee.name, mode: "insensitive" },
+      institutionId: attendee.meeting.institutionId,
+    },
+  });
+
+  const officialId = official?.id ?? attendeeEmail;
+  if (official && official.resolvedFrom === "manual") {
+    // Reset undoes a manual confirm/exclude: remove the user-written row.
+    // Registry-sourced rows (geds, parliament, ...) are left untouched —
+    // isDpoh is non-nullable and their determination isn't ours to clear;
+    // re-classification below re-resolves against the registry as-is.
+    await db.publicOfficial.delete({ where: { id: official.id } });
+  }
+
+  const affected = await db.detectedMeeting.findMany({
+    where: {
+      tenantId: ctx.tenantId,
+      attendees: { some: { email: attendeeEmail } },
+    },
+    select: { id: true, rawEventId: true },
+  });
+
+  const resolverCtx = await buildResolverContext(ctx.tenantId);
+  for (const m of affected) {
+    await classifyRawEvent(m.rawEventId, resolverCtx);
+    await generateDraftMcr(m.id);
+  }
+
+  await appendAuditEvent({
+    tenantId: ctx.tenantId,
+    actor: userId,
+    actorRole: auditActorRole(ctx),
+    onBehalfOfTenantId: ctx.actorKind === "agency" ? ctx.tenantId : undefined,
+    action: "dpoh-reset",
+    subject: officialId,
+    payload: { meetingId, attendeeEmail, affectedMeetings: affected.length },
+  });
+
+  revalidatePath("/filings");
+}
+
+export async function certifyBatchAction(formData: FormData) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  const ctx = await getTenantContext();
+  if (!ctx) throw new Error("No tenant");
+
+  // Non-negotiable #1: only the tenant's own Responsible Officer certifies.
+  requireCertifier(ctx);
+
+  // month is "YYYY-MM" — only certify MCRs whose meeting falls in that month
+  const month = formData.get("month");
+  if (typeof month !== "string" || !/^\d{4}-\d{2}$/.test(month)) {
+    throw new Error("Invalid or missing month parameter (expected YYYY-MM)");
+  }
+
+  const [year, mon] = month.split("-").map(Number) as [number, number];
+  const monthStart = new Date(Date.UTC(year, mon - 1, 1));
+  const monthEnd   = new Date(Date.UTC(year, mon, 1)); // exclusive
+
   const drafts = await db.draftMcr.findMany({
     where: {
-      meeting: { tenantId: ctx.tenantId, classification: "lobbying" },
+      meeting: {
+        tenantId: ctx.tenantId,
+        classification: "lobbying",
+        startAt: { gte: monthStart, lt: monthEnd },
+      },
       certifiedAt: null,
     },
     select: { id: true },
   });
+
+  if (drafts.length === 0) {
+    revalidatePath("/filings");
+    return;
+  }
 
   await db.draftMcr.updateMany({
     where: { id: { in: drafts.map((d) => d.id) } },
     data: { certifiedAt: new Date() },
   });
 
-  await db.auditEvent.create({
-    data: {
-      tenantId: ctx.tenantId,
-      actor: userId,
-      action: "batch-certified",
-      subject: ctx.tenantId,
-      payload: { count: drafts.length, note: "stub — LRS submission lands in Phase 4" },
+  await appendAuditEvent({
+    tenantId: ctx.tenantId,
+    actor: userId,
+    actorRole: auditActorRole(ctx),
+    onBehalfOfTenantId: ctx.actorKind === "agency" ? ctx.tenantId : undefined,
+    action: "batch-certified",
+    subject: ctx.tenantId,
+    payload: {
+      month,
+      count: drafts.length,
+      draftMcrIds: drafts.map((d) => d.id),
+      nextStep: `Run TENANT_ID=<id> FILING_MONTH=${month} npm run lrs:submit`,
     },
   });
 

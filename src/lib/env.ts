@@ -31,6 +31,15 @@ const schema = z.object({
     "must be 32 bytes when base64-decoded — generate with: openssl rand -base64 32",
   ),
 
+  // Microsoft 365 Calendar OAuth (Entra ID).
+  // Optional so the app boots before an Entra app registration exists —
+  // the /api/oauth/microsoft/* routes fail loudly when unset.
+  MICROSOFT_CLIENT_ID: z.string().min(1).optional(),
+  MICROSOFT_CLIENT_SECRET: z.string().min(1).optional(),
+  /** Entra tenant segment of the authority URL — "common" allows any org + personal accounts. */
+  MICROSOFT_TENANT: z.string().min(1).default("common"),
+  MICROSOFT_REDIRECT_URI: z.string().url().optional(),
+
   // Optional — not yet wired, but validated when present
   ANTHROPIC_API_KEY: z.string().startsWith("sk-ant-").optional(),
   INNGEST_EVENT_KEY: z.string().optional(),

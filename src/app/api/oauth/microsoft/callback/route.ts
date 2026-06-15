@@ -1,8 +1,9 @@
 /**
- * GET /api/oauth/google/callback
+ * GET /api/oauth/microsoft/callback
  *
- * Receives the Google OAuth authorization code, validates the state cookie,
- * exchanges the code for tokens, and upserts a CalendarConnection row.
+ * Receives the Microsoft authorization code, validates the state cookie,
+ * exchanges the code for tokens, and upserts a CalendarConnection row with
+ * provider = microsoft365. Mirrors /api/oauth/google/callback.
  *
  * All error branches redirect to /settings/calendars with a machine-readable
  * error param. No token or code values are ever logged or included in
@@ -14,14 +15,17 @@ import type { NextRequest } from "next/server";
 import { CalendarConnectionStatus, CalendarProvider } from "@prisma/client";
 import { auth } from "@clerk/nextjs/server";
 import { getTenantContext } from "@/server/tenant/context";
-import { exchangeCodeForTokens } from "@/lib/oauth/google";
+import { exchangeCodeForTokens } from "@/lib/oauth/microsoft";
 import { clearOAuthStateCookie, readOAuthStateCookie } from "@/lib/oauth/state-cookie";
 import { encryptToken } from "@/server/crypto/tokens";
 import { appendAuditEvent } from "@/server/audit-log/append";
 import { db } from "@/lib/db";
 
 const SETTINGS = "/settings/calendars";
-const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+// Microsoft echoes Graph scopes without the resource prefix ("Calendars.Read"),
+// but some tenant configurations return the fully-qualified form
+// ("https://graph.microsoft.com/Calendars.Read") — accept both.
+const CALENDAR_SCOPE_SUFFIX = "calendars.read";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const origin = request.nextUrl.origin;
@@ -49,7 +53,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const state = searchParams.get("state");
   const error = searchParams.get("error");
 
-  // 3. Error branch — user cancelled or Google returned an error
+  // 3. Error branch — user cancelled or Microsoft returned an error
+  // (e.g. access_denied, consent_required, server_error)
   if (error) {
     await clearOAuthStateCookie();
     return redirect(`${SETTINGS}?error=${encodeURIComponent(error)}`);
@@ -92,7 +97,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   // 7. Scope validation
-  if (!bundle.scopes.includes(CALENDAR_SCOPE)) {
+  const hasCalendarScope = bundle.scopes.some((s) =>
+    s.toLowerCase().endsWith(CALENDAR_SCOPE_SUFFIX),
+  );
+  if (!hasCalendarScope) {
     return redirect(`${SETTINGS}?error=missing_scope`);
   }
 
@@ -105,14 +113,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     where: {
       tenantId_provider_externalAccountId: {
         tenantId: ctx.tenantId,
-        provider: CalendarProvider.google,
+        provider: CalendarProvider.microsoft365,
         externalAccountId: bundle.externalAccountId,
       },
     },
     create: {
       tenantId: ctx.tenantId,
       connectedByUserId: ctx.userId,
-      provider: CalendarProvider.google,
+      provider: CalendarProvider.microsoft365,
       externalAccountId: bundle.externalAccountId,
       email: bundle.email,
       accessTokenEncrypted,
@@ -138,7 +146,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     actor: ctx.userId,
     action: "calendar-connected",
     subject: connection.id,
-    payload: { provider: "google" },
+    payload: { provider: "microsoft365" },
   });
 
   // 11. Redirect on success

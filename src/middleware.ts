@@ -9,6 +9,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/api/webhooks/(.*)", // Clerk + future integrations
   "/api/inngest",       // Inngest event handler — called by Inngest cloud, not browser users
+  "/certify(.*)",       // routed certification — the single-use token IS the auth (RO may have no account)
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

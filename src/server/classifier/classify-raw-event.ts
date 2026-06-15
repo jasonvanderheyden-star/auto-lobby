@@ -4,6 +4,7 @@ import {
   resolveAttendees,
   type ResolverContext,
 } from "@/server/dpoh-registry/resolve-attendee";
+import { suggestEngagement } from "@/server/engagements/suggest-engagement";
 import { classifyMeeting, type ClassificationResult } from "./classify-meeting";
 
 export interface ClassifyEventResult {
@@ -36,6 +37,7 @@ export async function classifyRawEvent(
       startsAt: true,
       endsAt: true,
       attendees: true,
+      tenant: { select: { agencyId: true, isAgencyOwnTenant: true } },
     },
   });
 
@@ -124,6 +126,18 @@ export async function classifyRawEvent(
 
     return { meetingId: meeting.id, attendeeCount: attendeeRows.length };
   });
+
+  // Consultant meeting→client attribution (agency-own tenants only).
+  // Cheap gate: tenant fields were fetched with the event — in-house tenants
+  // (no agencyId) never trigger the extra queries. Confirmed/manual
+  // attributions are never overwritten (handled inside suggestEngagement).
+  if (
+    (result.verdict === "lobbying" || result.verdict === "needs-info") &&
+    event.tenant.agencyId &&
+    event.tenant.isAgencyOwnTenant
+  ) {
+    await suggestEngagement(detected.meetingId);
+  }
 
   return {
     detectedMeetingId: detected.meetingId,

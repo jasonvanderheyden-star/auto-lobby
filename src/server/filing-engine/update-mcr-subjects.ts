@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getTenantContext } from "@/server/tenant/context";
+import { appendAuditEvent } from "@/server/audit-log/append";
 
 export async function updateMcrSubjectsAction(formData: FormData) {
   const { userId } = await auth();
@@ -79,17 +80,16 @@ export async function updateMcrSubjectsAction(formData: FormData) {
     });
   }
 
-  await db.auditEvent.create({
-    data: {
-      tenantId: ctx.tenantId,
-      actor: userId,
-      action: "subjects-updated",
-      subject: draftMcrId,
-      payload: {
-        oclCodes: selectedOclCodes,
-        count: selectedOclCodes.length,
-        dpohPreferencesUpdated: dpohAttendees.length,
-      },
+  await appendAuditEvent({
+    tenantId: ctx.tenantId,
+    actor: userId,
+    actorRole: "registrant",
+    action: "subjects-updated",
+    subject: draftMcrId,
+    payload: {
+      oclCodes: selectedOclCodes,
+      count: selectedOclCodes.length,
+      dpohPreferencesUpdated: dpohAttendees.length,
     },
   });
 

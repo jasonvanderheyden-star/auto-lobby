@@ -1,4 +1,9 @@
 import { db } from "@/lib/db";
+import {
+  lookupOfficialByEmail,
+  lookupOfficialByNameAtInstitution,
+  type PublicOfficialLite,
+} from "./lookup-official";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,6 +24,7 @@ export type ResolutionSignal =
 export type DpohMatchSource =
   | "email-exact"
   | "name-exact-at-institution"
+  | "name-fuzzy-at-institution"
   | "institution-domain-fallback";
 
 export interface AttendeeResolution {
@@ -50,16 +56,6 @@ interface InstitutionWithDomains {
   isDpohSource: boolean;
 }
 
-interface PublicOfficialLite {
-  id: string;
-  name: string;
-  role: string;
-  isDpoh: boolean;
-  dpohBasis: string | null;
-  ruleRef: string | null;
-  confidence: number;
-}
-
 export interface ResolverContext {
   internalDomains: Set<string>;
   institutionsByDomain: Map<string, InstitutionWithDomains>;
@@ -67,7 +63,7 @@ export interface ResolverContext {
   lookupOfficialByNameAtInstitution: (
     name: string,
     institutionId: string,
-  ) => Promise<PublicOfficialLite | null>;
+  ) => Promise<{ official: PublicOfficialLite; fuzzy: boolean } | null>;
 }
 
 // ── Pure resolver (testable with mocked context) ─────────────────────────────
@@ -122,8 +118,11 @@ export async function resolveAttendee(
     if (official) matchedBy = "email-exact";
   }
   if (!official && displayName) {
-    official = await ctx.lookupOfficialByNameAtInstitution(displayName, inst.id);
-    if (official) matchedBy = "name-exact-at-institution";
+    const result = await ctx.lookupOfficialByNameAtInstitution(displayName, inst.id);
+    if (result) {
+      official = result.official;
+      matchedBy = result.fuzzy ? "name-fuzzy-at-institution" : "name-exact-at-institution";
+    }
   }
 
   if (official) {
@@ -216,18 +215,8 @@ export async function buildResolverContext(tenantId: string): Promise<ResolverCo
   return {
     internalDomains,
     institutionsByDomain,
-    lookupOfficialByEmail: async (email) =>
-      db.publicOfficial.findFirst({
-        where: { email },
-        orderBy: { confidence: "desc" },
-        select: { id: true, name: true, role: true, isDpoh: true, dpohBasis: true, ruleRef: true, confidence: true },
-      }),
-    lookupOfficialByNameAtInstitution: async (name, institutionId) =>
-      db.publicOfficial.findFirst({
-        where: { institutionId, name: { equals: name, mode: "insensitive" } },
-        orderBy: { confidence: "desc" },
-        select: { id: true, name: true, role: true, isDpoh: true, dpohBasis: true, ruleRef: true, confidence: true },
-      }),
+    lookupOfficialByEmail,
+    lookupOfficialByNameAtInstitution,
   };
 }
 
