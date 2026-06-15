@@ -1,6 +1,6 @@
 # Auto Lobby — Claude Code brief
 
-Read this file first every session.
+Read this file first every session. See also `docs/Project-Memory.md` for portable working memory (direction, dev toolchain, commit state).
 
 ## What this is
 
