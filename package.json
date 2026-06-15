@@ -22,8 +22,10 @@
     "db:seed": "prisma db seed",
     "ocl:import": "dotenv -e .env.local -- tsx scripts/import-ocl.ts",
     "tenants:backfill": "dotenv -e .env.local -- tsx scripts/backfill-tenants.ts",
+    "qa:seed": "dotenv -e .env.local -- tsx scripts/seed-qa-pilot.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lrs:submit": "dotenv -e .env.local -- tsx scripts/submit-to-lrs.ts"
   },
   "prisma": {
     "seed": "dotenv -e .env.local -- tsx prisma/seed.ts"
@@ -46,6 +48,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "playwright": "^1.52.0",
     "@tailwindcss/postcss": "^4.1.5",
     "@types/node": "^22.15.3",
     "@types/papaparse": "^5.5.2",
