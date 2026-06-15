@@ -72,12 +72,26 @@ describe("resolveAttendee", () => {
       lookupOfficialByEmail: async () => null,
       lookupOfficialByNameAtInstitution: async (name, instId) =>
         name === "John Moffet" && instId === "inst-eccc"
-          ? { id: "off-2", name: "John Moffet", role: "Assistant Deputy Minister", isDpoh: true, dpohBasis: "position-designation", ruleRef: "DPOH Regulations s. 2(1)", confidence: 0.7 }
+          ? { official: { id: "off-2", name: "John Moffet", role: "Assistant Deputy Minister", isDpoh: true, dpohBasis: "position-designation", ruleRef: "DPOH Regulations s. 2(1)", confidence: 0.7 }, fuzzy: false }
           : null,
     });
     const r = await resolveAttendee({ email: "j.moffet@ec.gc.ca", displayName: "John Moffet" }, ctx);
     expect(r.signal).toBe("gov-with-named-dpoh");
     expect(r.dpohMatchedBy).toBe("name-exact-at-institution");
+  });
+
+  it("uses name-fuzzy-at-institution match for display name variants", async () => {
+    const ctx = makeCtx({
+      lookupOfficialByEmail: async () => null,
+      lookupOfficialByNameAtInstitution: async (_name, instId) =>
+        instId === "inst-eccc"
+          ? { official: { id: "off-3", name: "Jonathan Wilkinson", role: "Minister of Energy", isDpoh: true, dpohBasis: "role", ruleRef: "Lobbying Act s. 2(1) DPOH (a)", confidence: 0.85 }, fuzzy: true }
+          : null,
+    });
+    const r = await resolveAttendee({ email: "j.wilkinson@ec.gc.ca", displayName: "The Hon. Jonathan Wilkinson" }, ctx);
+    expect(r.signal).toBe("gov-with-named-dpoh");
+    expect(r.dpohMatchedBy).toBe("name-fuzzy-at-institution");
+    expect(r.resolvedOfficialName).toBe("Jonathan Wilkinson");
   });
 
   it("does NOT presume DPOH on institution-domain match alone (Kay Powe scenario)", async () => {
