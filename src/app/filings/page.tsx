@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { getTenantContext } from "@/server/tenant/context";
-import { FilingRow } from "./_components/FilingRow";
-import { certifyBatchAction } from "./_actions";
+import { MonthGroup, type DraftWithMeeting } from "./_components/MonthGroup";
+import { RouteForCertification } from "./_components/RouteForCertification";
+import { RenewalBanner } from "@/components/renewal-banner";
+import { HeaderActions } from "@/components/HeaderActions";
 
 const DEFAULT_SUBJECTS_FOR_DEEP_SKY = [
   "Environment",
@@ -31,6 +33,7 @@ export default async function FilingsPage() {
           attendees: true,
           reasons: true,
           institution: { select: { name: true, acronym: true } },
+          engagement: { select: { id: true, clientName: true } },
         },
       },
     },
@@ -55,9 +58,58 @@ export default async function FilingsPage() {
     }),
     db.tenant.findUnique({
       where: { id: ctx.tenantId },
-      select: { name: true, industry: true, registrationId: true },
+      select: {
+        name: true,
+        industry: true,
+        registrationId: true,
+        registrationExpiresAt: true,
+        agencyId: true,
+        isAgencyOwnTenant: true,
+      },
     }),
   ]);
+
+  // ── Agency-own tenant: consultant meeting→client attribution ──────────────
+  // Consultant calendars live in the firm's own tenant; each lobbying draft
+  // must be attributed to a client undertaking (Engagement) before filing.
+  const agencyId = tenant?.isAgencyOwnTenant ? (tenant.agencyId ?? null) : null;
+  const agencyMode = agencyId !== null;
+
+  const engagements = agencyId
+    ? await db.engagement.findMany({
+        where: { agencyId, status: "active" },
+        select: { id: true, clientName: true, registrationNum: true },
+        orderBy: { clientName: "asc" },
+      })
+    : [];
+
+  // "Why was this client suggested?" — replay the engine's provenance from the
+  // audit trail (latest engagement-suggested event per meeting).
+  type WhySignal = { signal: string; weight: number; detail: string };
+  const engagementWhy: Record<string, WhySignal[]> = {};
+  if (agencyMode && drafts.length > 0) {
+    const whyEvents = await db.auditEvent.findMany({
+      where: {
+        tenantId: ctx.tenantId,
+        action: "engagement-suggested",
+        subject: { in: drafts.map((d) => d.meeting.id) },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { subject: true, payload: true },
+    });
+    const seen = new Set<string>();
+    for (const e of whyEvents) {
+      if (seen.has(e.subject)) continue; // keep only the latest per meeting
+      seen.add(e.subject);
+      const payload = e.payload as {
+        outcome?: string;
+        signals?: WhySignal[];
+      } | null;
+      if (payload?.outcome === "suggested" && Array.isArray(payload.signals)) {
+        engagementWhy[e.subject] = payload.signals;
+      }
+    }
+  }
 
   const lobbyingCount = drafts.filter((d) => d.meeting.classification === "lobbying").length;
   const needsInfoCount = drafts.filter((d) => d.meeting.classification === "needs-info").length;
@@ -133,10 +185,13 @@ export default async function FilingsPage() {
               </Link>
             </nav>
           </div>
+          <HeaderActions />
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
+        <RenewalBanner expiresAt={tenant?.registrationExpiresAt ?? null} />
+
         <section className="grid grid-cols-3 gap-6 mb-6">
           <div className="col-span-2 bg-white border border-stone-200 rounded-2xl p-6 relative overflow-hidden">
             <div className="absolute -top-16 -right-16 w-64 h-64 bg-gradient-to-br from-emerald-100/70 to-teal-100/30 rounded-full blur-3xl"></div>
@@ -154,20 +209,14 @@ export default async function FilingsPage() {
                 the DPOH registry, and pre-drafted MCRs for every meeting that may be reportable lobbying.
               </p>
 
-              <div className="flex items-center gap-3 mt-5">
-                <form action={certifyBatchAction}>
-                  <button
-                    type="submit"
-                    className="text-[15px] px-5 py-2.5 rounded-lg bg-emerald-700 text-white font-semibold hover:bg-emerald-800 shadow-sm disabled:opacity-40 disabled:hover:bg-emerald-700"
-                    disabled={lobbyingCount === 0}
-                    title={lobbyingCount === 0 ? "No lobbying meetings to certify" : "Certify and submit all (stub — LRS submission lands in Phase 4)"}
-                  >
-                    Certify &amp; submit {lobbyingCount} →
-                  </button>
-                </form>
-                <button className="text-sm px-4 py-2.5 rounded-lg border border-stone-200 hover:bg-stone-50">
-                  Review individually first
-                </button>
+              <div className="mt-5">
+                <p className="text-sm text-stone-500">
+                  {lobbyingCount > 0
+                    ? `${lobbyingCount} meeting${lobbyingCount === 1 ? "" : "s"} ready to certify — use the Certify button in each month below.`
+                    : needsInfoCount > 0
+                      ? "Resolve the highlighted attendees below, then certify each month."
+                      : "No lobbying meetings detected yet."}
+                </p>
               </div>
 
               <div className="mt-6 pt-5 border-t border-stone-100 grid grid-cols-5 gap-4">
@@ -241,40 +290,62 @@ export default async function FilingsPage() {
           </section>
         )}
 
-        <section className="bg-white border border-stone-200 rounded-xl overflow-hidden mb-24">
-          <div className="px-5 py-3 border-b border-stone-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h2 className="text-sm font-semibold text-stone-900">
-                {drafts.length} pre-drafted MCR{drafts.length === 1 ? "" : "s"}
-              </h2>
-              <span className="text-xs text-stone-500">Click any row to see provenance</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-stone-500">
-              <span className="inline-flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Auto-confirmed lobbying
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Needs your input
-              </span>
-            </div>
-          </div>
+        {/* Route-for-certification is for MANAGED CLIENT tenants only: agency
+            admin/staff send the batch to the client's Responsible Officer.
+            It must NOT appear on the agency's own-filing tenant (consultants
+            certify in-app, per engagement), nor for consultant-role actors —
+            this mirrors the server-side authorization in routeBatchForCertification. */}
+        {ctx.actorKind === "agency" &&
+          !tenant?.isAgencyOwnTenant &&
+          (ctx.agencyRole === "admin" || ctx.agencyRole === "staff") && (
+            <section className="mb-6">
+              <RouteForCertification tenantId={ctx.tenantId} tenantName={tenant?.name ?? "this client"} />
+            </section>
+          )}
 
-          {drafts.length === 0 ? (
+        {drafts.length === 0 ? (
+          <section className="bg-white border border-stone-200 rounded-xl mb-24">
             <div className="px-5 py-12 text-center text-stone-500 text-sm">
               No drafts yet. Connect a calendar and let the classifier sweep your events.
             </div>
-          ) : (
-            <ul className="divide-y divide-stone-100">
-              {drafts.map((d) => (
-                <FilingRow
-                  key={d.id}
-                  draft={JSON.parse(JSON.stringify(d))}
+          </section>
+        ) : (
+          <div className="space-y-4 mb-24">
+            {(() => {
+              // Compute current and previous month keys for default-open logic
+              const now = new Date();
+              const currentKey  = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+              const prevDate    = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+              const previousKey = `${prevDate.getUTCFullYear()}-${String(prevDate.getUTCMonth() + 1).padStart(2, "0")}`;
+
+              // Group by YYYY-MM
+              const groups = new Map<string, { label: string; drafts: typeof drafts }>();
+              for (const d of drafts) {
+                const dt  = new Date(d.meeting.startAt);
+                const key = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}`;
+                const lbl = dt.toLocaleString("en-CA", { month: "long", year: "numeric", timeZone: "UTC" });
+                if (!groups.has(key)) groups.set(key, { label: lbl, drafts: [] });
+                groups.get(key)!.drafts.push(d);
+              }
+
+              return Array.from(groups.entries()).map(([key, { label, drafts: monthDrafts }]) => (
+                <MonthGroup
+                  key={key}
+                  monthKey={key}
+                  label={label}
+                  // Prisma types `subjects`/`provenance` as JsonValue; they are
+                  // written as Subject[] / provenance records by generate-draft-mcr.
+                  drafts={monthDrafts as unknown as DraftWithMeeting[]}
                   roleHints={roleHints}
+                  defaultOpen={key === currentKey || key === previousKey}
+                  agencyMode={agencyMode}
+                  engagements={engagements}
+                  engagementWhy={engagementWhy}
                 />
-              ))}
-            </ul>
-          )}
-        </section>
+              ));
+            })()}
+          </div>
+        )}
       </main>
     </div>
   );
