@@ -269,15 +269,15 @@ Goal: close architectural gaps and build the infrastructure required to charge c
 
 **What shipped:**
 
-- **Chunk 5a**: Dedicated audit-log service at `src/server/audit-log/append.ts` — exports `appendAuditEvent()`, typed `AuditAction` union, `ActorRole` union, optional `tx` param for use inside Prisma transactions. `AuditEvent` schema extended with `actorRole` (nullable) and `onBehalfOfTenantId` (nullable) for agency GTM. Migration `20260522145845_add_audit_actor_role`. All inline `db.auditEvent.create()` calls replaced throughout `src/`. **Run `npx prisma migrate dev` + `npx prisma generate` locally before next dev session.**
+- **Chunk 5a**: Dedicated audit-log service at `src/server/audit-log/append.ts` — exports `appendAuditEvent()`, typed `AuditAction` union, `ActorRole` union, optional `tx` param for use inside Prisma transactions. `AuditEvent` schema extended with `actorRole` (nullable) and `onBehalfOfTenantId` (nullable) for agency GTM. Migration `20260522145845_add_audit_actor_role`. All inline `db.auditEvent.create()` calls replaced throughout `src/`. ✅ Migration applied (confirmed via `prisma migrate status` 2026-06-16).
 
-- **Chunk 5b** (`pending migrate`): Fuzzy name matching — new `src/server/dpoh-registry/lookup-official.ts` extracts and upgrades both lookup functions. Two-pass strategy: (1) canonicalize via `canonicalizeName()`, (2) exact case-insensitive match, (3) pg_trgm `similarity() >= 0.45` fallback for accents/initials/middle names. New `DpohMatchSource` value `"name-fuzzy-at-institution"` for provenance. Fuzzy hits get `confidence × 0.85`. Migration `20260522175735_enable_pg_trgm` adds the extension + GIN index. **Run `npx prisma migrate deploy` (or `migrate dev`) locally, then `pnpm typecheck`.**
+- **Chunk 5b**: Fuzzy name matching — new `src/server/dpoh-registry/lookup-official.ts` extracts and upgrades both lookup functions. Two-pass strategy: (1) canonicalize via `canonicalizeName()`, (2) exact case-insensitive match, (3) pg_trgm `similarity() >= 0.45` fallback for accents/initials/middle names. New `DpohMatchSource` value `"name-fuzzy-at-institution"` for provenance. Fuzzy hits get `confidence × 0.85`. Migration `20260522175735_enable_pg_trgm` adds the extension + GIN index. ✅ Migration applied (confirmed via `prisma migrate status` 2026-06-16). Note: the residual needs-info backfill re-run (to benefit from fuzzy matching) has not yet been done.
 
 **What's next in Phase 5 prep:**
 - Chunk 5c: Annual registration renewal automation
 - Chunk 5d: Tenant entitlements groundwork (for multi-product platform)
 
-## Phase 6 — Two-motion productization (built 2026-06-10, pending local migration)
+## Phase 6 — Two-motion productization (built 2026-06-10, migrations applied 2026-06-16)
 
 Firms are piloting — the agency motion is **unparked**. The platform now supports two sequences:
 
@@ -290,7 +290,7 @@ Firms are piloting — the agency motion is **unparked**. The platform now suppo
 
 **Calendar providers**: Google + Microsoft 365 (Entra OAuth at `/api/oauth/microsoft/*`, Graph `calendarView/delta`, refresh-token rotation handled). Provider dispatch in `src/server/calendar/sync.ts` via `SYNC_PROVIDERS` record.
 
-**New schema** (chunk 6a): `Agency`, `AgencyMember`, `TenantMember`, `Engagement`; `Tenant.agencyId/isAgencyOwnTenant` + branding fields; `DetectedMeeting.engagementId/engagementSource/engagementConfidence`; `DraftMcr` routing fields. **Run locally before next dev session:** `npx prisma migrate dev --name agency_roles_engagements_routing && npx prisma generate && pnpm typecheck && pnpm test`.
+**New schema** (chunk 6a): `Agency`, `AgencyMember`, `TenantMember`, `Engagement`; `Tenant.agencyId/isAgencyOwnTenant` + branding fields; `DetectedMeeting.engagementId/engagementSource/engagementConfidence`; `DraftMcr` routing fields. ✅ Migration `20260615142846_agency_roles_engagements_routing` applied (confirmed via `prisma migrate status` 2026-06-16); `prisma generate` runs on `pnpm install`.
 
 **QA state**: typecheck clean against the new client (verified out-of-tree); 150/150 vitest tests pass (59 new under `tests/` covering role gates, attribution thresholds, token single-use, batch exclusion of unconfirmed attributions, context bootstrap). QA seed: `npm run qa:seed` (idempotent, upsert-based — never truncates shared tables) creates the Maple Leaf Strategies demo firm + NorthVolt managed client + engagements + synthetic events run through the real classifier. Env: `SEED_CLERK_USER_ID`, `QA_FIRM_ORG_ID`, `QA_CLIENT_ORG_ID`.
 

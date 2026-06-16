@@ -54,6 +54,16 @@ credential custody) intact in every flow.
 - **Git from a sandbox on the mounted folder** emits `Operation not permitted`
   warnings on `.git` lock/temp files and cannot reach the HTTPS remote (no
   credentials). Run `git push`/`pull` from your own terminal.
+- **Do NOT keep the repo in an iCloud-synced folder.** The project previously
+  lived under `~/Documents/Claude/Projects/Auto Lobby`; macOS syncs `~/Documents`
+  to iCloud Drive by default, which corrupted `node_modules` — iCloud created
+  ~70 conflict-copy artifacts (`lib 2/`, `Hook 2.js`, `vite 2`, etc.) and
+  displaced real files (e.g. `pure-rand/lib/pure-rand.js` went missing), so Node
+  threw `MODULE_NOT_FOUND` and `pnpm install` reported "Already up to date"
+  because the package dir + `package.json` still satisfied the lockfile check.
+  Diagnosed + fixed 2026-06-16. Fix when it recurs: `rm -rf node_modules &&
+  pnpm install` (pause iCloud first so it doesn't race the install). Durable
+  fix: keep the working copy in an unsynced path (e.g. `~/dev/auto-lobby`).
 
 ## Commit state
 
