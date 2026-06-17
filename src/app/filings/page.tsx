@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { getTenantContext } from "@/server/tenant/context";
+import { isEntitled } from "@/server/entitlements/entitlements";
+import { EntitlementRequired } from "@/components/EntitlementRequired";
 import { MonthGroup, type DraftWithMeeting } from "./_components/MonthGroup";
 import { RouteForCertification } from "./_components/RouteForCertification";
 import { RenewalBanner } from "@/components/renewal-banner";
@@ -24,6 +26,11 @@ export default async function FilingsPage() {
 
   const ctx = await getTenantContext();
   if (!ctx) redirect("/dashboard");
+
+  // Revenue gate: Auto Lobby (Product 01) requires an active entitlement.
+  if (!isEntitled(ctx, "lobbying_compliance")) {
+    return <EntitlementRequired />;
+  }
 
   const drafts = await db.draftMcr.findMany({
     where: { meeting: { tenantId: ctx.tenantId } },

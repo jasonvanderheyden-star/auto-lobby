@@ -20,6 +20,10 @@ import {
   revokeRouting,
   routeBatchForCertification,
 } from "@/server/filing-engine/route-for-certification";
+import {
+  assertEntitled,
+  EntitlementError,
+} from "@/server/entitlements/entitlements";
 
 export interface RouteForCertificationState {
   status: "idle" | "success" | "error";
@@ -96,8 +100,10 @@ export async function routeForCertificationAction(
   let actor: AgencyActor;
   try {
     actor = await requireAgencyActorForTenant(tenantId);
+    // Revenue gate: the managed client tenant must be entitled to Auto Lobby.
+    await assertEntitled(tenantId, "lobbying_compliance");
   } catch (err) {
-    if (err instanceof ForbiddenError) {
+    if (err instanceof ForbiddenError || err instanceof EntitlementError) {
       return { status: "error", message: err.message };
     }
     throw err;

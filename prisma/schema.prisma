@@ -99,8 +99,78 @@ model Tenant {
   auditEvents            AuditEvent[]
   dpohSubjectPreferences DpohSubjectPreference[]
   engagementsAsClient    Engagement[]            @relation("EngagementClientTenant")
+  entitlements           TenantEntitlement[]
 
   @@index([agencyId])
+}
+
+// ============================================================
+// Tenant entitlements — the revenue gate (Phase 5 chunk 5d).
+//
+// One row per (tenant × product). Auto Lobby is `lobbying_compliance`;
+// future platform products (Government Intelligence, Grants, Permitting)
+// get their own rows so a single invoice can carry multiple line items
+// (Platform-Roadmap.md, architectural implication #3).
+//
+// Access is granted only by an ACTIVE or TRIALING row — absence or any
+// other status (none/past_due/canceled) denies (default-deny). The gate
+// is enforced by requireEntitlement() in src/server/entitlements/.
+//
+// `source` records how the entitlement was set: a platform admin (manual),
+// offline/invoiced billing (invoice), a synced billing provider (stripe),
+// or the grandfather/seed backfill (seed). Stripe + invoice billing land
+// in chunk 5d-2; the stripe* and *PeriodEnd fields are the seam for it and
+// stay nullable until then.
+// ============================================================
+
+enum Product {
+  lobbying_compliance
+  gov_intelligence
+  grants
+  permitting
+}
+
+enum EntitlementStatus {
+  none // explicit no-access; access is also denied when no row exists
+  trialing
+  active
+  past_due
+  canceled
+}
+
+enum EntitlementSource {
+  manual // set directly by a platform/tenant admin
+  invoice // offline / invoiced billing (enterprise + agency deals)
+  stripe // synced from a Stripe subscription (chunk 5d-2)
+  seed // grandfather/backfill script
+}
+
+model TenantEntitlement {
+  id       String            @id @default(cuid())
+  tenantId String
+  tenant   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product  Product
+  status   EntitlementStatus @default(none)
+  source   EntitlementSource @default(manual)
+
+  plan  String? // plan/tier nickname, e.g. "direct" | "agency"
+  seats Int? // seat count, when metered by seat
+
+  // Billing-provider linkage — nullable until chunk 5d-2 wires Stripe.
+  stripeCustomerId     String?
+  stripeSubscriptionId String? @unique
+  currentPeriodEnd     DateTime?
+
+  // Offline / invoiced billing bookkeeping.
+  invoiceRef String? // PO or invoice number for invoiced customers
+  notes      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, product])
+  @@index([tenantId])
+  @@index([status])
 }
 
 enum TenantMemberRole {

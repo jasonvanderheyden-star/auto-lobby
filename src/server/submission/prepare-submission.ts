@@ -6,6 +6,7 @@
  */
 
 import { db } from "@/lib/db";
+import { assertEntitled } from "@/server/entitlements/entitlements";
 import type { LrsDpoh, LrsSubmissionPayload, LrsSubjectDetail } from "./types";
 
 /**
@@ -50,6 +51,9 @@ export async function prepareSubmissions(
    */
   engagementId?: string,
 ): Promise<LrsSubmissionPayload[]> {
+  // Revenue gate: never prepare an LRS submission for an unentitled tenant.
+  await assertEntitled(tenantId, "lobbying_compliance");
+
   const tenant = await db.tenant.findUniqueOrThrow({
     where: { id: tenantId },
     select: { name: true, agencyId: true },

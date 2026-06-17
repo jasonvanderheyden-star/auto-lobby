@@ -25,6 +25,10 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import type { AgencyMemberRole, TenantMemberRole } from "@prisma/client";
 import { db } from "@/lib/db";
+import {
+  loadEntitlementSummaries,
+  type EntitlementSummary,
+} from "@/server/entitlements/entitlements";
 
 // ─── Models that carry a tenantId column ─────────────────────────────────
 
@@ -55,6 +59,8 @@ export interface TenantContext {
   agencyRole?: AgencyMemberRole;
   /** Email of the acting user, when known. */
   email?: string;
+  /** Product entitlements for this tenant (the revenue gate). */
+  entitlements: EntitlementSummary[];
 }
 
 const FULL_ROLES: TenantMemberRole[] = [
@@ -101,7 +107,8 @@ export async function getTenantContext(): Promise<TenantContext> {
     );
   }
 
-  const base = { tenantId: tenant.id, userId, clerkOrgId: orgId };
+  const entitlements = await loadEntitlementSummaries(tenant.id);
+  const base = { tenantId: tenant.id, userId, clerkOrgId: orgId, entitlements };
 
   // 1) Direct membership by clerkUserId
   const byUserId = await db.tenantMember.findFirst({

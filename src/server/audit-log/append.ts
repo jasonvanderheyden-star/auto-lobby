@@ -22,7 +22,10 @@ export type AuditAction =
   | "mcr-routing-revoked"
   | "engagement-suggested"  // auto-suggest proposed a client attribution
   | "engagement-confirmed"  // consultant confirmed the attribution
-  | "engagement-reassigned";
+  | "engagement-reassigned"
+  | "entitlement-granted"   // product access turned on for a tenant
+  | "entitlement-changed"   // entitlement updated (plan/seats/period/status)
+  | "entitlement-revoked";  // product access turned off for a tenant
 
 export type ActorRole =
   | "registrant"   // in-house GR team member

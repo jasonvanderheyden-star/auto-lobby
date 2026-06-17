@@ -25,6 +25,7 @@ import {
   ForbiddenError,
   requireReviewer,
 } from "@/server/tenant/roles";
+import { requireEntitlement } from "@/server/entitlements/entitlements";
 
 const confirmSchema = z.object({
   meetingId: z.string().min(1),
@@ -56,6 +57,7 @@ export async function confirmEngagementAction(formData: FormData) {
   const ctx = await getTenantContext();
   if (!ctx) throw new Error("No tenant");
 
+  requireEntitlement(ctx, "lobbying_compliance");
   requireReviewer(ctx);
 
   const { meetingId, engagementId } = confirmSchema.parse({
@@ -126,6 +128,8 @@ export async function certifyConsultantBatchAction(formData: FormData) {
   if (!userId) throw new Error("Unauthorized");
   const ctx = await getTenantContext();
   if (!ctx) throw new Error("No tenant");
+
+  requireEntitlement(ctx, "lobbying_compliance");
 
   const { engagementId, month } = certifySchema.parse({
     engagementId: formData.get("engagementId"),

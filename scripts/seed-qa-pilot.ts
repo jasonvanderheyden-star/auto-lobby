@@ -209,6 +209,24 @@ async function main() {
         update: process.env.QA_CLIENT_ORG_ID ? { clerkOrgId: process.env.QA_CLIENT_ORG_ID } : {},
       });
 
+      // ── Entitlements (revenue gate) ─────────────────────────────────────
+      // Both QA tenants are entitled to Auto Lobby so the demo passes the gate.
+      for (const tenantId of [IDS.firmTenant, IDS.clientTenant]) {
+        await tx.tenantEntitlement.upsert({
+          where: {
+            tenantId_product: { tenantId, product: "lobbying_compliance" },
+          },
+          create: {
+            tenantId,
+            product: "lobbying_compliance",
+            status: "active",
+            source: "seed",
+            plan: "agency",
+          },
+          update: { status: "active", source: "seed", plan: "agency" },
+        });
+      }
+
       // ── Firm members ────────────────────────────────────────────────────
       await tx.agencyMember.upsert({
         where: { id: IDS.memberAdmin },

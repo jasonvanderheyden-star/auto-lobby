@@ -13,6 +13,7 @@ import { classifyRawEvent } from "@/server/classifier/classify-raw-event";
 import { generateDraftMcr } from "@/server/filing-engine/generate-draft-mcr";
 import { buildResolverContext } from "@/server/dpoh-registry/resolve-attendee";
 import { appendAuditEvent } from "@/server/audit-log/append";
+import { requireEntitlement } from "@/server/entitlements/entitlements";
 
 export async function confirmDpohAction(formData: FormData) {
   const { userId } = await auth();
@@ -20,6 +21,7 @@ export async function confirmDpohAction(formData: FormData) {
   const ctx = await getTenantContext();
   if (!ctx) throw new Error("No tenant");
 
+  requireEntitlement(ctx, "lobbying_compliance");
   requireReviewer(ctx);
 
   const meetingId = formData.get("meetingId");
@@ -112,6 +114,7 @@ export async function excludeMeetingAction(formData: FormData) {
   const ctx = await getTenantContext();
   if (!ctx) throw new Error("No tenant");
 
+  requireEntitlement(ctx, "lobbying_compliance");
   requireReviewer(ctx);
 
   const meetingId = formData.get("meetingId");
@@ -236,6 +239,7 @@ export async function resetAttendeeAction(formData: FormData) {
   const ctx = await getTenantContext();
   if (!ctx) throw new Error("No tenant");
 
+  requireEntitlement(ctx, "lobbying_compliance");
   requireReviewer(ctx);
 
   const meetingId = formData.get("meetingId");
@@ -303,6 +307,7 @@ export async function certifyBatchAction(formData: FormData) {
   if (!ctx) throw new Error("No tenant");
 
   // Non-negotiable #1: only the tenant's own Responsible Officer certifies.
+  requireEntitlement(ctx, "lobbying_compliance");
   requireCertifier(ctx);
 
   // month is "YYYY-MM" — only certify MCRs whose meeting falls in that month

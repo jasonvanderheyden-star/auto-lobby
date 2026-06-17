@@ -13,6 +13,7 @@ const { mockDb, mockAuth, mockCurrentUser } = vi.hoisted(() => ({
     },
     agencyMember: { findFirst: vi.fn() },
     auditEvent: { create: vi.fn() },
+    tenantEntitlement: { findMany: vi.fn() },
   },
 }));
 
@@ -42,6 +43,7 @@ beforeEach(() => {
   mockDb.tenantMember.findFirst.mockResolvedValue(null); // byUserId and byEmail
   mockDb.agencyMember.findFirst.mockResolvedValue(null);
   mockDb.auditEvent.create.mockResolvedValue({});
+  mockDb.tenantEntitlement.findMany.mockResolvedValue([]);
 });
 
 describe("getTenantContext — zero-member bootstrap", () => {

@@ -18,6 +18,7 @@ function memberCtx(roles: TenantMemberRole[]): TenantContext {
     actorKind: "member",
     roles,
     email: "ro@client.ca",
+    entitlements: [],
   };
 }
 
@@ -34,6 +35,7 @@ function agencyCtx(
     agencyId: "agency_1",
     agencyRole,
     email: "staff@firm.ca",
+    entitlements: [],
   };
 }
 
