@@ -41,15 +41,15 @@ export function CertifyForm({
 
   if (state.status === "success") {
     return (
-      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
-        <div className="w-10 h-10 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-xl font-bold">
+      <div className="bg-success-soft border border-success rounded-2xl p-6 text-center">
+        <div className="w-10 h-10 mx-auto rounded-full bg-success flex items-center justify-center text-white text-xl font-bold">
           ✓
         </div>
-        <h2 className="mt-3 text-lg font-semibold text-emerald-900">
+        <h2 className="mt-3 text-lg font-semibold text-success-strong">
           Certification recorded
         </h2>
-        <p className="mt-1 text-sm text-emerald-900/80">{state.message}</p>
-        <p className="mt-3 text-xs text-emerald-900/60">
+        <p className="mt-1 text-sm text-success-strong/80">{state.message}</p>
+        <p className="mt-3 text-xs text-success-strong/60">
           This link has now been deactivated. {tenantName}&apos;s compliance
           team will submit the certified reports to the Lobbyists Registration
           System.

@@ -123,14 +123,14 @@ export function MonthGroup({
 
           {/* Status chips — visible even when collapsed */}
           {allCertified && (
-            <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="inline-flex items-center gap-1 text-xs text-success-strong font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
               Certified
             </span>
           )}
           {!allCertified && lobbyingCount > 0 && (
             <span className="inline-flex items-center gap-1 text-xs text-stone-500">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
               {lobbyingCount} ready
             </span>
           )}
@@ -148,12 +148,12 @@ export function MonthGroup({
           onClick={(e) => e.stopPropagation()} // don't collapse when clicking certify
         >
           {certifiedCount > 0 && uncertified === 0 && (
-            <span className="text-xs text-emerald-700 font-medium bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+            <span className="text-xs text-success-strong font-medium bg-success-soft border border-success px-2 py-0.5 rounded-full">
               ✓ {certifiedCount} certified
             </span>
           )}
           {certifiedCount > 0 && uncertified > 0 && (
-            <span className="text-xs text-emerald-700 font-medium">
+            <span className="text-xs text-success-strong font-medium">
               ✓ {certifiedCount} certified
             </span>
           )}

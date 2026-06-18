@@ -151,11 +151,11 @@ export function FilingRow({
           <span
             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium text-xs ${
               isLobbying
-                ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
+                ? "bg-success-soft text-success-strong border border-success"
                 : "bg-amber-50 text-amber-900 border border-amber-200"
             }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${isLobbying ? "bg-emerald-500" : "bg-amber-500"}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${isLobbying ? "bg-success" : "bg-amber-500"}`} />
             {isLobbying ? "Auto-drafted" : "Needs input"}
           </span>
         </div>
@@ -386,7 +386,7 @@ export function FilingRow({
               <div className="space-y-1">
                 {m.reasons.map((r) => (
                   <div key={r.id} className="text-xs text-stone-700">
-                    <span className={r.ok === true ? "text-emerald-700" : r.ok === false ? "text-stone-400" : "text-amber-600"}>
+                    <span className={r.ok === true ? "text-success-strong" : r.ok === false ? "text-stone-400" : "text-amber-600"}>
                       {r.ok === true ? "+" : r.ok === false ? "−" : "?"}
                     </span>{" "}
                     {r.text}

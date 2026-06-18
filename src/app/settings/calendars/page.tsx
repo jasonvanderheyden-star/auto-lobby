@@ -36,7 +36,7 @@ const PROVIDER_META = {
 } as const;
 
 const STATUS_STYLES = {
-  active: { pill: "bg-emerald-100 text-emerald-800", label: "Active" },
+  active: { pill: "bg-success-soft text-success-strong", label: "Active" },
   disconnected: { pill: "bg-stone-100 text-stone-500", label: "Disconnected" },
   token_refresh_failed: { pill: "bg-amber-100 text-amber-900", label: "Needs reconnection" },
 } as const;

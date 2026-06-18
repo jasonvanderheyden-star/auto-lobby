@@ -8,6 +8,11 @@
   /* Accent token */
   --color-accent: #3B43B8;            /* periwinkle deep — primary action base */
 
+  /* Semantic success — kept distinct from periwinkle primary (brief §3, §9; non-negotiable #4) */
+  --color-success:        #3FAE8E;    /* brand Success/OK */
+  --color-success-soft:   #E8F6F1;    /* pale tint for success fills (was bg-emerald-50/100) */
+  --color-success-strong: #2F8E73;    /* legible success text on soft fills (was text-emerald-700/800/900) */
+
   /* Periwinkle ramp mapped onto emerald-* (brand stops in bold comments) */
   --color-emerald-50:  #EEF0FE;       /* Periwinkle Mist (brand) */
   --color-emerald-100: #E0E4FC;

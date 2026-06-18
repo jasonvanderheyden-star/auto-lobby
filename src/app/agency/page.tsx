@@ -199,11 +199,11 @@ export default async function AgencyPage() {
                               pending draft{stats.pending === 1 ? "" : "s"}
                             </span>
                             <span>
-                              <span className="font-semibold text-emerald-800">{stats.certified}</span>{" "}
+                              <span className="font-semibold text-success-strong">{stats.certified}</span>{" "}
                               certified
                             </span>
                             {stats.routedToEmail ? (
-                              <span className={stats.routingExpired ? "text-red-600" : "text-emerald-700"}>
+                              <span className={stats.routingExpired ? "text-red-600" : "text-success-strong"}>
                                 {stats.routingExpired ? "Routing expired — " : "Routed to "}
                                 {stats.routedToEmail}
                                 {stats.routingExpired && " (re-route below)"}

@@ -77,7 +77,7 @@ export default async function RegistrationDetailPage({ params }: PageProps) {
             <span
               className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
                 registration.status === "Active"
-                  ? "bg-emerald-100 text-emerald-800"
+                  ? "bg-success-soft text-success-strong"
                   : "bg-stone-100 text-stone-500"
               }`}
             >
