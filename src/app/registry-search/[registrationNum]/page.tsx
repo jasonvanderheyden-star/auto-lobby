@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { commsHaveBlankSubjects } from "./comm-utils";
+import { BrandLockup } from "@/components/Brand";
 
 interface PageProps {
   params: Promise<{ registrationNum: string }>;
@@ -49,12 +50,7 @@ export default async function RegistrationDetailPage({ params }: PageProps) {
       <header className="border-b border-stone-200 bg-white">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-emerald-600 to-teal-700 text-[13px] font-bold text-white">
-                AL
-              </div>
-              <span className="font-semibold text-stone-900">Auto Lobby</span>
-            </div>
+            <BrandLockup />
           </div>
         </div>
       </header>

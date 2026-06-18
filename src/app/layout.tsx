@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
-const inter = Inter({
+const display = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-sans",
 });
 
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
+
 export const metadata: Metadata = {
-  title: "Auto Lobby",
+  title: "Auto Lobby — powered by Whiphand",
   description: "Automated Canadian lobbyist compliance",
 };
 
@@ -21,7 +26,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${inter.variable} font-sans antialiased`}>{children}</body>
+        <body className={`${display.variable} ${mono.variable} font-sans antialiased`}>
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );

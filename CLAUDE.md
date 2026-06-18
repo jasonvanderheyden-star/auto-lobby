@@ -38,7 +38,7 @@ Parked ideas (don't build, but check before making structural decisions that mig
 - `docs/Agency-Motion-Parked.md` — GR-firm / law-firm white-label GTM motion (architectural implications are *not* parked — see non-negotiable #7 below)
 - `docs/Calendar-Confirm-UX-Parked.md` — per-meeting attendee confirmation in the calendar app itself (Phase 4–5)
 
-Build React components that match the prototypes visually. Inter font, emerald-700 accent, stone neutral palette, generous whitespace.
+Build React components on the **Whiphand** brand system: Space Grotesk (display/UI) + JetBrains Mono (labels/data/status) via `next/font/google`; periwinkle `#5B6CF0` accent (deep `#3B43B8` for hover/text-on-tint); mist neutrals (`#F5F6FB` page background, `#FFFFFF` cards, `#E6E8F2` lines, `#2A2E3A` text); mace mark via `src/components/Brand.tsx` (`BrandTile` / `BrandLockup`). See `docs/Whiphand-Reskin-Brief.md` and `brand/02-guidelines/Whiphand-Brand.html` for the full system. Generous whitespace. Note: the `prototypes/` files predate the rebrand and show the *old* look (Inter / emerald / stone) — match the Whiphand tokens, not the prototype colors.
 
 ## Non-negotiable constraints
 

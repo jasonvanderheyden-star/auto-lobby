@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { BrandLockup } from "@/components/Brand";
 
 export const metadata = { title: "Registry Search — Auto Lobby" };
 
@@ -43,12 +44,7 @@ export default async function RegistrySearchPage({ searchParams }: PageProps) {
       <header className="border-b border-stone-200 bg-white">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-emerald-600 to-teal-700 text-[13px] font-bold text-white">
-                AL
-              </div>
-              <span className="font-semibold text-stone-900">Auto Lobby</span>
-            </div>
+            <BrandLockup />
             <nav className="flex items-center gap-1 text-sm">
               <a className="rounded-md px-3 py-1.5 text-stone-600 hover:bg-stone-100" href="#">
                 Dashboard

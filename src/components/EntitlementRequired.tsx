@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandTile } from "@/components/Brand";
 
 /**
  * Shown when a tenant reaches a product surface (e.g. /filings) without an
@@ -15,8 +16,8 @@ export function EntitlementRequired({
   return (
     <div className="min-h-screen bg-stone-50 flex items-center justify-center px-6">
       <div className="max-w-lg w-full bg-white border border-stone-200 rounded-2xl p-8 text-center">
-        <div className="mx-auto w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white font-bold text-lg mb-5">
-          AL
+        <div className="mx-auto w-12 flex justify-center mb-5">
+          <BrandTile size={48} />
         </div>
         <h1 className="text-2xl font-semibold text-stone-900">
           {productLabel} isn&apos;t active for this workspace

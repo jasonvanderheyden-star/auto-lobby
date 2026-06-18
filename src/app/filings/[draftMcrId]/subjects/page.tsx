@@ -4,6 +4,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getTenantContext } from "@/server/tenant/context";
 import { SubjectPicker } from "@/components/subject-picker";
+import { BrandLockup } from "@/components/Brand";
 
 interface PageProps {
   params: Promise<{ draftMcrId: string }>;
@@ -62,11 +63,8 @@ export default async function SubjectsPage({ params }: PageProps) {
       {/* Nav */}
       <header className="bg-white border-b border-stone-200">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-8">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white font-bold text-[13px]">
-              AL
-            </div>
-            <span className="font-semibold text-stone-900">Auto Lobby</span>
+          <Link href="/dashboard">
+            <BrandLockup />
           </Link>
           <nav className="flex items-center gap-1 text-sm">
             <Link href="/dashboard" className="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100">

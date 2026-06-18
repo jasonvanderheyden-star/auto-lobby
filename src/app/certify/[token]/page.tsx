@@ -19,7 +19,7 @@ export const metadata = { title: "Certify Monthly Communication Reports" };
 
 const PLATFORM_DEFAULTS = {
   productName: "Auto Lobby",
-  brandColor: "#047857", // emerald-700
+  brandColor: "#5B6CF0", // periwinkle
   logoUrl: null as string | null,
   supportEmail: null as string | null,
 };

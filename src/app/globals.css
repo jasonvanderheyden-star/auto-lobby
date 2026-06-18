@@ -1,11 +1,28 @@
 @import "tailwindcss";
 
 @theme {
-  /* Inter font — match prototypes */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Type — Whiphand */
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Emerald-700 accent + stone neutral palette per CLAUDE.md */
-  --color-accent: var(--color-emerald-700);
+  /* Accent token */
+  --color-accent: #3B43B8;            /* periwinkle deep — primary action base */
+
+  /* Periwinkle ramp mapped onto emerald-* (brand stops in bold comments) */
+  --color-emerald-50:  #EEF0FE;       /* Periwinkle Mist (brand) */
+  --color-emerald-100: #E0E4FC;
+  --color-emerald-200: #D7DCFB;       /* Periwinkle Ring (brand) */
+  --color-emerald-300: #C0C7F8;
+  --color-emerald-400: #8E99F4;
+  --color-emerald-500: #5B6CF0;       /* Periwinkle (brand) */
+  --color-emerald-600: #4A57DE;
+  --color-emerald-700: #3B43B8;       /* Periwinkle Deep (brand) */
+  --color-emerald-800: #2F368F;
+  --color-emerald-900: #21243A;       /* Ink (brand) — for text-emerald-900 */
+
+  /* Teal mapped to periwinkle so the logo gradient stays in-brand */
+  --color-teal-100: #E0E4FC;
+  --color-teal-700: #3B43B8;
 }
 
 @keyframes chip-in {
