@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whiphand Brand Guidelines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --peri:#5B6CF0; --peri-dk:#3B43B8; --peri-tint:#EEF0FE; --peri-ring:#D7DCFB;
+    --mist:#F5F6FB; --paper:#FFFFFF; --line:#E6E8F2;
+    --slate:#2A2E3A; --muted:#6E7385; --faint:#9AA0B5;
+    --ink:#21243A; --ink-2:#2A2E44; --line-dk:#343A52; --on-ink:#F4F5FA; --muted-ink:#9AA0B5;
+    --ok:#3FAE8E;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Space Grotesk',system-ui,sans-serif;color:var(--slate);background:var(--paper);-webkit-font-smoothing:antialiased;line-height:1.6}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .wrap{max-width:920px;margin:0 auto;padding:0 32px}
+  section{padding:64px 0;border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--peri);margin:0 0 16px}
+  h1{font-size:46px;font-weight:600;letter-spacing:-.02em;line-height:1.05;margin:0}
+  h2{font-size:13px;font-family:'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:500;margin:0 0 28px}
+  h3{font-size:24px;font-weight:600;letter-spacing:-.01em;margin:0 0 10px}
+  p{font-size:16px;color:#414655;margin:0 0 14px;max-width:62ch}
+  .lead{font-size:20px;color:var(--slate);max-width:60ch}
+  .muted{color:var(--muted)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .card{border:1px solid var(--line);border-radius:14px;padding:22px;background:var(--paper)}
+  .word{font-weight:600;letter-spacing:-.02em}
+  .swatch{height:84px;border-radius:12px}
+  .sw-meta{font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:8px;color:var(--muted)}
+  .sw-name{font-size:13px;font-weight:500;margin-top:10px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;padding:7px 14px;border-radius:999px}
+  .lock{display:flex;align-items:center;gap:11px}
+  .lock .lw{font-size:22px;font-weight:600;letter-spacing:-.02em}
+  .lock .lm{font-size:22px;font-weight:400;letter-spacing:-.02em;color:var(--muted)}
+  .do{border-left:3px solid var(--ok);padding-left:14px}
+  .dont{border-left:3px solid #D98A8A;padding-left:14px}
+  .tag{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--faint);letter-spacing:.08em}
+  .mace-body{stroke:currentColor}
+  .mace-fill{fill:currentColor}
+</style>
+</head>
+<body>
+
+<section style="background:var(--ink);border-bottom:none;padding:96px 0 104px">
+  <div class="wrap" style="color:var(--on-ink)">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:40px">
+      <svg width="52" height="52" viewBox="0 0 48 48" fill="none" style="color:#fff" aria-hidden="true">
+        <line x1="24" y1="1.6" x2="24" y2="5" class="mace-body" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="18.4" y1="3.3" x2="20.2" y2="6.2" class="mace-body" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="29.6" y1="3.3" x2="27.8" y2="6.2" class="mace-body" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="24" cy="13" r="7.3" class="mace-body" stroke-width="3.6"/>
+        <circle cx="24" cy="13" r="2.5" fill="#5B6CF0"/>
+        <rect x="21.4" y="19.5" width="5.2" height="18.6" rx="2.6" class="mace-fill"/>
+        <rect x="16.5" y="38.1" width="15" height="4.6" rx="2.3" class="mace-fill"/>
+      </svg>
+      <span style="font-size:30px;font-weight:600;letter-spacing:-.02em;color:#fff">whiphand</span>
+    </div>
+    <p class="eyebrow" style="color:#A6ADF5">Brand guidelines · v0.2 · working draft</p>
+    <h1 style="color:#fff;max-width:18ch">The operating system for government &amp; regulatory affairs.</h1>
+    <p style="color:var(--muted-ink);font-size:19px;margin-top:22px;max-width:54ch">One platform that automates every point of contact between an organization and its government. Lobbying compliance comes first.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>01 · The name</h2>
+    <h3>Whiphand</h3>
+    <p class="lead">From the idiom <em>“to have the whip hand,”</em> meaning to hold control and the decisive advantage.</p>
+    <p>It carries a second, quieter meaning: in Parliament, the <span class="mono">whip</span> is the officer who keeps the agenda and the votes in order. Both senses point the same way. Whiphand puts you in command of a system that normally controls you. The name is confident, not aggressive: it’s about control, not force.</p>
+    <p class="muted mono" style="font-size:13px">/ˈwɪp ˌhand/ · noun · “positive control; advantage,” per Merriam-Webster</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>02 · Positioning &amp; voice</h2>
+    <div class="grid2">
+      <div>
+        <h3>What we are</h3>
+        <p>Whiphand automates the work between an organization and its government. The first offering, Auto Lobby, handles lobbying compliance: it watches your calendar, finds meetings with officials, drafts the monthly report, and leaves one action a month, review and approve. Intelligence, grants, and permits follow on the same platform.</p>
+      </div>
+      <div>
+        <h3>How we sound</h3>
+        <p>Plain and precise, with a calm sense of authority. We keep the user in control.</p>
+        <p style="margin-bottom:6px"><strong>We never use jargon or acronyms.</strong></p>
+        <p class="mono" style="font-size:13px;color:var(--muted)">“your meetings” &nbsp;not&nbsp; “calendar events”<br>“officials” &nbsp;not&nbsp; “DPOHs”<br>“monthly report” &nbsp;not&nbsp; “MCR”<br>“the lobbying registry” &nbsp;not&nbsp; “OCL / LRS”</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:24px;background:var(--peri-tint);border-color:var(--peri-ring)">
+      <p class="tag" style="color:var(--peri-dk)">PRIMARY TAGLINE</p>
+      <p style="font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--slate);margin:6px 0 0">The whip hand over government.</p>
+      <p class="muted" style="margin-top:12px;font-size:14px">Alternates: “Government affairs, under control.” · “The operating system for government &amp; regulatory affairs.”</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>03 · Logo</h2>
+    <div class="grid2" style="align-items:stretch">
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:220px;background:var(--mist)">
+        <svg width="72" height="72" viewBox="0 0 48 48" fill="none" style="color:var(--slate)" aria-hidden="true">
+          <line x1="24" y1="1.6" x2="24" y2="5" class="mace-body" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="18.4" y1="3.3" x2="20.2" y2="6.2" class="mace-body" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="29.6" y1="3.3" x2="27.8" y2="6.2" class="mace-body" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="24" cy="13" r="7.3" class="mace-body" stroke-width="3.6"/>
+          <circle cx="24" cy="13" r="2.5" fill="#5B6CF0"/>
+          <rect x="21.4" y="19.5" width="5.2" height="18.6" rx="2.6" class="mace-fill"/>
+          <rect x="16.5" y="38.1" width="15" height="4.6" rx="2.3" class="mace-fill"/>
+        </svg>
+        <p class="tag">THE MARK · THE MACE</p>
+      </div>
+      <div class="card" style="background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:220px">
+        <svg width="58" height="58" viewBox="0 0 48 48" role="img" aria-hidden="true">
+          <rect width="48" height="48" rx="13" fill="#21243A" stroke="#343A52"/>
+          <g transform="translate(24,24) scale(0.7) translate(-24,-24)" fill="none" style="color:#fff">
+            <line x1="24" y1="1.6" x2="24" y2="5" class="mace-body" stroke-width="2.6" stroke-linecap="round"/>
+            <line x1="18.4" y1="3.3" x2="20.2" y2="6.2" class="mace-body" stroke-width="2.6" stroke-linecap="round"/>
+            <line x1="29.6" y1="3.3" x2="27.8" y2="6.2" class="mace-body" stroke-width="2.6" stroke-linecap="round"/>
+            <circle cx="24" cy="13" r="7.3" class="mace-body" stroke-width="3.8"/>
+            <circle cx="24" cy="13" r="2.6" fill="#5B6CF0"/>
+            <rect x="21.4" y="19.5" width="5.2" height="18.6" rx="2.6" class="mace-fill"/>
+            <rect x="16.5" y="38.1" width="15" height="4.6" rx="2.3" class="mace-fill"/>
+          </g>
+        </svg>
+        <p class="tag" style="color:var(--muted-ink)">APP ICON · ON INK</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;display:flex;align-items:center;gap:14px;justify-content:center;padding:34px">
+      <svg width="40" height="40" viewBox="0 0 48 48" fill="none" style="color:var(--slate)" aria-hidden="true">
+        <line x1="24" y1="1.6" x2="24" y2="5" class="mace-body" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="18.4" y1="3.3" x2="20.2" y2="6.2" class="mace-body" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="29.6" y1="3.3" x2="27.8" y2="6.2" class="mace-body" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="24" cy="13" r="7.3" class="mace-body" stroke-width="3.6"/>
+        <circle cx="24" cy="13" r="2.5" fill="#5B6CF0"/>
+        <rect x="21.4" y="19.5" width="5.2" height="18.6" rx="2.6" class="mace-fill"/>
+        <rect x="16.5" y="38.1" width="15" height="4.6" rx="2.3" class="mace-fill"/>
+      </svg>
+      <span style="font-size:30px;font-weight:600;letter-spacing:-.02em;color:var(--slate)">whiphand</span>
+    </div>
+    <p class="tag" style="text-align:center;margin-top:10px">PRIMARY HORIZONTAL LOCKUP</p>
+
+    <div class="grid2" style="margin-top:28px">
+      <div class="do">
+        <p style="font-weight:500;margin-bottom:6px">Do</p>
+        <p class="muted" style="font-size:14px">Keep clear space around the mark equal to the height of its head. Use the wordmark lowercase. Slate-on-mist, or white-on-ink.</p>
+      </div>
+      <div class="dont">
+        <p style="font-weight:500;margin-bottom:6px">Don’t</p>
+        <p class="muted" style="font-size:14px">Recolor the mace outside the palette, stretch it, add effects, capitalize the wordmark, or place it on busy backgrounds.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>04 · Color</h2>
+    <p class="lead" style="margin-bottom:28px">Soft and easy on the eyes: a <span class="mono" style="color:var(--peri)">periwinkle</span> accent over misty light surfaces, with ink reserved for covers and marketing.</p>
+
+    <p class="tag" style="margin-bottom:12px">SIGNAL · PERIWINKLE</p>
+    <div class="grid3" style="margin-bottom:32px">
+      <div><div class="swatch" style="background:var(--peri)"></div><div class="sw-name">Periwinkle</div><div class="sw-meta">#5B6CF0 · primary action</div></div>
+      <div><div class="swatch" style="background:var(--peri-dk)"></div><div class="sw-name">Periwinkle Deep</div><div class="sw-meta">#3B43B8 · hover · text on tint</div></div>
+      <div><div class="swatch" style="background:var(--peri-tint)"></div><div class="sw-name">Periwinkle Mist</div><div class="sw-meta">#EEF0FE · fills / highlights</div></div>
+    </div>
+
+    <p class="tag" style="margin-bottom:12px">SURFACES · THE PRODUCT (LIGHT)</p>
+    <div class="grid4" style="margin-bottom:32px">
+      <div><div class="swatch" style="background:var(--mist);border:1px solid var(--line)"></div><div class="sw-name">Mist (page)</div><div class="sw-meta">#F5F6FB</div></div>
+      <div><div class="swatch" style="background:var(--paper);border:1px solid var(--line)"></div><div class="sw-name">Paper (cards)</div><div class="sw-meta">#FFFFFF</div></div>
+      <div><div class="swatch" style="background:var(--line)"></div><div class="sw-name">Line</div><div class="sw-meta">#E6E8F2</div></div>
+      <div><div class="swatch" style="background:var(--slate)"></div><div class="sw-name">Slate (text)</div><div class="sw-meta">#2A2E3A</div></div>
+    </div>
+
+    <p class="tag" style="margin-bottom:12px">INK · COVERS &amp; MARKETING</p>
+    <div class="grid4">
+      <div><div class="swatch" style="background:var(--ink)"></div><div class="sw-name">Ink</div><div class="sw-meta">#21243A</div></div>
+      <div><div class="swatch" style="background:var(--ink-2)"></div><div class="sw-name">Elevated</div><div class="sw-meta">#2A2E44</div></div>
+      <div><div class="swatch" style="background:#A6ADF5"></div><div class="sw-name">Periwinkle Light</div><div class="sw-meta">#A6ADF5 · accent on ink</div></div>
+      <div><div class="swatch" style="background:var(--muted)"></div><div class="sw-name">Muted</div><div class="sw-meta">#6E7385</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>05 · Typography</h2>
+    <div class="grid2">
+      <div class="card">
+        <p class="tag">DISPLAY &amp; UI</p>
+        <p style="font-size:40px;font-weight:600;letter-spacing:-.02em;margin:6px 0 2px">Space Grotesk</p>
+        <p class="muted" style="font-size:14px;margin-bottom:14px">Headlines, UI, body. Weights 400 to 700.</p>
+        <p style="font-size:28px;font-weight:600;margin:0">Aa Bb Cc 0123</p>
+        <p style="font-size:16px;margin:8px 0 0">The whip hand over government.</p>
+      </div>
+      <div class="card">
+        <p class="tag">MONO · DATA &amp; LABELS</p>
+        <p class="mono" style="font-size:38px;font-weight:600;margin:6px 0 2px">JetBrains Mono</p>
+        <p class="muted" style="font-size:14px;margin-bottom:14px">Eyebrows, data, codes, system voice.</p>
+        <p class="mono" style="font-size:26px;font-weight:500;margin:0">Aa Bb Cc 0123</p>
+        <p class="mono" style="font-size:13px;margin:10px 0 0;color:var(--muted)">REG-2026-0142 · STATUS: READY</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>06 · The product family</h2>
+    <p class="lead" style="margin-bottom:28px">Whiphand is the platform. Each offering on it gets a clear product name. The first is <span class="word">Auto Lobby</span>. They share one mark, one palette, and one home at whiphand.com.</p>
+    <div class="grid2">
+      <div class="card">
+        <div class="lock"><span class="lw">Auto Lobby</span><span class="lm">· powered by whiphand</span></div>
+        <p class="muted" style="font-size:14px;margin-top:12px">The first offering. Lobbying compliance: detect, draft, approve, and file. <span class="mono" style="color:var(--peri)">Live.</span></p>
+      </div>
+      <div class="card">
+        <div class="lock"><span class="lw">Intelligence</span></div>
+        <p class="muted" style="font-size:14px;margin-top:12px">A coming Whiphand offering. Monitoring and alerts on what government is doing. <span class="mono">Next.</span></p>
+      </div>
+      <div class="card">
+        <div class="lock"><span class="lw">Grants</span></div>
+        <p class="muted" style="font-size:14px;margin-top:12px">A coming Whiphand offering. Funding match and application drafting. <span class="mono">Later.</span></p>
+      </div>
+      <div class="card">
+        <div class="lock"><span class="lw">Permits</span></div>
+        <p class="muted" style="font-size:14px;margin-top:12px">A coming Whiphand offering. Multi-agency permitting roadmaps. <span class="mono">Later.</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="border-bottom:none">
+  <div class="wrap">
+    <h2>07 · The system, applied</h2>
+    <div class="card" style="background:var(--mist);border-color:var(--line);padding:28px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:10px;color:var(--slate)">
+          <svg width="22" height="22" viewBox="0 0 48 48" fill="none" style="color:var(--slate)" aria-hidden="true"><circle cx="24" cy="13" r="7.3" class="mace-body" stroke-width="3.6"/><circle cx="24" cy="13" r="2.5" fill="#5B6CF0"/><rect x="21.4" y="19.5" width="5.2" height="18.6" rx="2.6" class="mace-fill"/><rect x="16.5" y="38.1" width="15" height="4.6" rx="2.3" class="mace-fill"/></svg>
+          <span style="font-weight:600;letter-spacing:-.02em">Auto Lobby</span>
+          <span class="mono" style="color:var(--muted);font-size:11px;letter-spacing:.04em">POWERED BY WHIPHAND</span>
+        </div>
+        <span class="pill" style="background:var(--peri-tint);color:var(--peri-dk)">Ready to review</span>
+      </div>
+      <div class="card" style="background:var(--paper)">
+        <p style="font-size:22px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px">3 meetings ready to report</p>
+        <p style="color:var(--muted);font-size:14px;margin:0 0 18px">We scanned 1,469 events and wrote up every meeting you may need to report.</p>
+        <span class="pill" style="background:var(--peri);color:#fff">Approve all (3)</span>
+        <span class="pill" style="background:transparent;color:var(--slate);border:1px solid var(--line);margin-left:8px">Review each</span>
+      </div>
+    </div>
+    <p class="tag" style="margin-top:14px">SAMPLE PRODUCT SURFACE · MIST CANVAS, PERIWINKLE ACTION, PLAIN LANGUAGE</p>
+
+    <div style="margin-top:48px;display:flex;align-items:center;gap:12px;color:var(--slate)">
+      <svg width="26" height="26" viewBox="0 0 48 48" fill="none" style="color:var(--slate)" aria-hidden="true"><circle cx="24" cy="13" r="7.3" class="mace-body" stroke-width="3.6"/><circle cx="24" cy="13" r="2.5" fill="#5B6CF0"/><rect x="21.4" y="19.5" width="5.2" height="18.6" rx="2.6" class="mace-fill"/><rect x="16.5" y="38.1" width="15" height="4.6" rx="2.3" class="mace-fill"/></svg>
+      <span style="font-size:20px;font-weight:600;letter-spacing:-.02em">whiphand</span>
+      <span class="muted mono" style="font-size:13px;margin-left:auto">brand guidelines · v0.2</span>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Whiphand app icon">
+  <rect width="48" height="48" rx="13" fill="#0B0C0E"/>
+  <g transform="translate(24,24) scale(0.7) translate(-24,-24)" fill="none">
+    <line x1="24" y1="1.6" x2="24" y2="5" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
+    <line x1="18.4" y1="3.3" x2="20.2" y2="6.2" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
+    <line x1="29.6" y1="3.3" x2="27.8" y2="6.2" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="24" cy="13" r="7.3" stroke="#FFFFFF" stroke-width="3.8"/>
+    <circle cx="24" cy="13" r="2.6" fill="#5B6CF0"/>
+    <rect x="21.4" y="19.5" width="5.2" height="18.6" rx="2.6" fill="#FFFFFF"/>
+    <rect x="16.5" y="38.1" width="15" height="4.6" rx="2.3" fill="#FFFFFF"/>
+  </g>
+</svg>
