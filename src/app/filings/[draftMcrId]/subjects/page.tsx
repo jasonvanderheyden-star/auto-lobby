@@ -2,9 +2,9 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { getTenantContext } from "@/server/tenant/context";
+import { getTenantContext, isAgencyMember } from "@/server/tenant/context";
 import { SubjectPicker } from "@/components/subject-picker";
-import { BrandLockup } from "@/components/Brand";
+import { TopNav } from "@/components/TopNav";
 
 interface PageProps {
   params: Promise<{ draftMcrId: string }>;
@@ -62,21 +62,8 @@ export default async function SubjectsPage({ params }: PageProps) {
     <div className="min-h-screen bg-stone-50 pb-28">
       {/* Nav */}
       <header className="bg-white border-b border-stone-200">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-8">
-          <Link href="/dashboard">
-            <BrandLockup />
-          </Link>
-          <nav className="flex items-center gap-1 text-sm">
-            <Link href="/dashboard" className="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100">
-              Dashboard
-            </Link>
-            <Link href="/filings" className="px-3 py-1.5 rounded-md text-stone-900 bg-stone-100 font-medium">
-              Filings
-            </Link>
-            <Link href="/settings/calendars" className="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100">
-              Settings
-            </Link>
-          </nav>
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center">
+          <TopNav active="filings" showAgency={await isAgencyMember(userId)} />
         </div>
       </header>
 

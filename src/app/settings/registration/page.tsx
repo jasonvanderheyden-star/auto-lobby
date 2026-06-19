@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
-import { getTenantContext } from "@/server/tenant/context";
+import { getTenantContext, isAgencyMember } from "@/server/tenant/context";
 import { db } from "@/lib/db";
 import { updateRegistrationAction } from "./_actions";
-import { BrandLockup } from "@/components/Brand";
+import { TopNav } from "@/components/TopNav";
 import { SaveButton } from "./_save-button";
 
 export const metadata = { title: "Registration Settings — Auto Lobby" };
@@ -56,7 +56,7 @@ export default async function RegistrationSettingsPage() {
       {/* Nav */}
       <header className="border-b border-stone-200 bg-white">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <BrandLockup />
+          <TopNav active="settings" showAgency={await isAgencyMember(userId)} />
         </div>
       </header>
 

@@ -1,9 +1,9 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { OrgSwitcher } from "./org-switcher";
-import { BrandLockup } from "@/components/Brand";
+import { TopNav } from "@/components/TopNav";
+import { isAgencyMember } from "@/server/tenant/context";
 
 export const metadata = { title: "Dashboard — Auto Lobby" };
 
@@ -27,26 +27,7 @@ export default async function DashboardPage() {
       {/* Nav */}
       <header className="border-b border-stone-200 bg-white">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-8">
-            <BrandLockup />
-            <nav className="flex items-center gap-1 text-sm">
-              <a className="rounded-md bg-stone-100 px-3 py-1.5 font-medium text-stone-900" href="#">
-                Dashboard
-              </a>
-              <Link
-                className="rounded-md px-3 py-1.5 text-stone-600 hover:bg-stone-100"
-                href="/registry-search"
-              >
-                Registry
-              </Link>
-              <Link
-                className="rounded-md px-3 py-1.5 text-stone-600 hover:bg-stone-100"
-                href="/settings/calendars"
-              >
-                Calendars
-              </Link>
-            </nav>
-          </div>
+          <TopNav active="dashboard" showAgency={await isAgencyMember(userId)} />
           <OrgSwitcher />
         </div>
       </header>

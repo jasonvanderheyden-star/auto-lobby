@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { commsHaveBlankSubjects } from "./comm-utils";
-import { BrandLockup } from "@/components/Brand";
+import { TopNav } from "@/components/TopNav";
+import { isAgencyMember } from "@/server/tenant/context";
 
 interface PageProps {
   params: Promise<{ registrationNum: string }>;
@@ -16,6 +18,7 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function RegistrationDetailPage({ params }: PageProps) {
   const { registrationNum: encodedNum } = await params;
   const registrationNum = decodeURIComponent(encodedNum);
+  const { userId } = await auth();
 
   const registration = await db.oclPublicRegistration.findFirst({
     where: { registrationNum },
@@ -49,9 +52,7 @@ export default async function RegistrationDetailPage({ params }: PageProps) {
       {/* Nav */}
       <header className="border-b border-stone-200 bg-white">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-8">
-            <BrandLockup />
-          </div>
+          <TopNav active="registry" showAgency={await isAgencyMember(userId)} />
         </div>
       </header>
 

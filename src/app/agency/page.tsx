@@ -9,12 +9,12 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { revokeRoutingAction } from "./_actions";
 import { RouteForCertificationForm } from "./_components/RouteForCertificationForm";
 import { HeaderActions } from "@/components/HeaderActions";
-import { BrandLockup } from "@/components/Brand";
+import { TopNav } from "@/components/TopNav";
+import { isAgencyMember } from "@/server/tenant/context";
 
 export const metadata = { title: "Agency — Auto Lobby" };
 
@@ -129,22 +129,7 @@ export default async function AgencyPage() {
     <div className="min-h-screen bg-stone-50">
       <header className="bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/dashboard">
-              <BrandLockup />
-            </Link>
-            <nav className="flex items-center gap-1 text-sm">
-              <Link href="/dashboard" className="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100">
-                Dashboard
-              </Link>
-              <Link href="/filings" className="px-3 py-1.5 rounded-md text-stone-600 hover:bg-stone-100">
-                Filings
-              </Link>
-              <Link href="/agency" className="px-3 py-1.5 rounded-md text-stone-900 bg-stone-100 font-medium">
-                Agency
-              </Link>
-            </nav>
-          </div>
+          <TopNav active="agency" showAgency={await isAgencyMember(userId)} />
           <HeaderActions />
         </div>
       </header>
