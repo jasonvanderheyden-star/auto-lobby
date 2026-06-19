@@ -40,6 +40,26 @@ tester + qa-reviewer + security-compliance run
    - **security-compliance** audits the diff against the seven non-negotiables and issues APPROVE / APPROVE WITH CONDITIONS / BLOCK.
 5. **Human reviews the PR and merges.** Agents never merge. The human reads the PR, the qa-reviewer issues, and the security-compliance verdict, then merges.
 
+## Working-tree discipline & the orchestrator guard
+
+All subagents share **one** git working tree (and run in parallel during step 4), so a subagent that switches branches or reverts files corrupts the tree for every other agent and for the orchestrator. This has bitten us twice: a review subagent ran `git checkout main` / `git checkout main -- .` to "compare," then either left the tree on the wrong branch or ran a gate (`pnpm typecheck`) against it — silently invalidating the review.
+
+**Two layers protect against it:**
+
+**1. Prevention — subagents never mutate the checked-out branch.** Every Bash-capable agent definition (`implementer`, `tester`, `qa-reviewer`, `security-compliance`) carries a "Working-tree discipline" section forbidding `git checkout <branch>` / `switch` / `restore` / `reset` / `stash` on the shared tree. To compare branches they use **read-only** git instead — no checkout:
+- `git diff <base>...HEAD` (and `… -- <path>`), `git show <ref>:<path>`, `git log <base>..HEAD`.
+- To prove a failure is **pre-existing**: `git diff <base>...HEAD --name-only` — if the offending file isn't listed, the issue predates this branch *by definition*. (No need to check out the base and re-run.)
+- If tooling genuinely must run on another branch: an **isolated `git worktree`** (`git worktree add --detach /tmp/wt-guard <ref>` … `git worktree remove --force …`), never the shared checkout. Note a fresh worktree has no `node_modules`.
+
+**2. Detection — the orchestrator wraps every Bash-capable stage with a fingerprint assertion** (`scripts/agent-worktree-guard.sh`). The orchestrator (the main loop dispatching agents) MUST:
+```
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+FP=$(scripts/agent-worktree-guard.sh fingerprint)     # before dispatching the stage
+#   … run the subagent(s) …
+scripts/agent-worktree-guard.sh assert "$BRANCH" "$FP" # after each returns
+```
+`assert` exits non-zero **loudly** if HEAD moved, the branch changed, or files were reverted/added. On failure: restore (`git checkout "$BRANCH"`), treat that stage's git-dependent conclusions as **suspect**, and re-run it on the correct branch. For agents that legitimately commit (`implementer`, `tester`), assert **branch-only** (`assert "$BRANCH"`, omit the fingerprint) so their own commits don't trip it.
+
 ## Human approval gates (explicit)
 
 Work **stops for human sign-off** at these points — agents may not proceed past them on their own:
