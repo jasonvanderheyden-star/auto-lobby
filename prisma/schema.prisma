@@ -607,3 +607,141 @@ model OclPublicCommReport {
   @@index([communicationDate])
   @@index([dpohName])
 }
+
+// ============================================================
+// Funding Navigator (Product 03) — reference catalog + disbursements (G0)
+// Read-only PLATFORM reference data (same posture as the OCL tables):
+// no tenantId, idempotent import. See docs/Funding-G0-Data-Foundation-Spec.md.
+// ============================================================
+
+model FundingProgram {
+  id              String   @id @default(cuid())
+  // Canonical (English) identity — participates in the natural key.
+  funder          String // Organization - English
+  name            String // Title - English
+  governmentLevel GovLevel
+  // Bilingual source free-text from the Business Benefits Finder feed (FR nullable).
+  funderFr           String? // Organization - French
+  nameFr             String? // Title - French
+  shortDescriptionEn String? @db.Text
+  shortDescriptionFr String? @db.Text
+  longDescriptionEn  String? @db.Text // benefit blurb — NOT eligibility (narrativeCriteria is reserved for G0c)
+  longDescriptionFr  String? @db.Text
+  sourceUrl          String? // Organization URL - English (the G0c scrape target)
+  sourceUrlFr        String? // Organization URL - French
+  // Structured dimensions — absent from the BBF feed; written NULL in G0a, never guessed.
+  instrumentType    InstrumentType?
+  valueMin          Decimal?
+  valueMax          Decimal?
+  intakeCadence     IntakeCadence?
+  intakeUrl         String?
+  intakeFormType    IntakeFormType?
+  narrativeCriteria String?         @db.Text // reserved for G0c eligibility extraction
+  rules             EligibilityRule[]
+  sources           FundingProgramSource[]
+
+  @@unique([funder, name])
+  @@index([governmentLevel, instrumentType])
+}
+
+model EligibilityRule {
+  id         String         @id @default(cuid())
+  programId  String
+  program    FundingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  dimension  RuleDimension
+  operator   RuleOperator
+  value      String
+  confidence Float
+  source     RuleSource
+
+  @@index([programId])
+}
+
+model FundingProgramSource {
+  id            String         @id @default(cuid())
+  programId     String
+  program       FundingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  feed          String // "ckan:business-benefits-finder", "scrape:ontario", ...
+  sourceVersion String? // CKAN resource id / last_modified
+  fetchedAt     DateTime       @default(now())
+
+  @@index([programId])
+}
+
+model FundingDisbursement {
+  id              String    @id @default(cuid())
+  recipientName   String
+  recipientRegion String?
+  funder          String
+  programNameRaw  String
+  programId       String? // fuzzy-joined to FundingProgram; nullable
+  amount          Decimal?
+  disbursedOn     DateTime?
+  purpose         String?   @db.Text
+
+  @@index([programId])
+  @@index([funder])
+}
+
+enum GovLevel {
+  federal
+  provincial
+  municipal
+  funded_org
+}
+
+enum InstrumentType {
+  grant
+  repayable_contribution
+  loan
+  loan_guarantee
+  tax_credit
+  wage_subsidy
+  equity
+  advisory
+  in_kind
+}
+
+enum IntakeCadence {
+  continuous
+  window
+  first_come
+  closed
+}
+
+enum IntakeFormType {
+  online_portal
+  fillable_pdf
+  static_pdf
+  email_or_offline
+  unknown
+}
+
+enum RuleDimension {
+  sector
+  region
+  company_stage
+  headcount
+  revenue
+  incorporation_type
+  canadian_ownership_pct
+  project_type
+  eligible_cost
+  other
+}
+
+enum RuleOperator {
+  eq
+  neq
+  gte
+  lte
+  in
+  not_in
+  contains
+}
+
+enum RuleSource {
+  extracted_structured
+  llm_parsed
+  manual
+}
