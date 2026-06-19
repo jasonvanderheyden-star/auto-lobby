@@ -39,7 +39,7 @@ export default async function RoutedCertificationPage({ params }: PageProps) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center px-6">
         <div className="max-w-md w-full bg-white border border-stone-200 rounded-2xl p-8 text-center">
-          <div className="w-10 h-10 mx-auto rounded-full bg-stone-100 flex items-center justify-center text-stone-400 text-xl">
+          <div className="w-10 h-10 mx-auto rounded-full bg-stone-100 flex items-center justify-center text-stone-500 text-xl">
             !
           </div>
           <h1 className="mt-4 text-lg font-semibold text-stone-900">

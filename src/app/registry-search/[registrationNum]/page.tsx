@@ -159,7 +159,7 @@ export default async function RegistrationDetailPage({ params }: PageProps) {
             <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-stone-100 bg-stone-50 text-left text-xs font-medium text-stone-400 uppercase tracking-wide">
+                  <tr className="border-b border-stone-100 bg-stone-50 text-left text-xs font-medium text-stone-500 uppercase tracking-wide">
                     <th className="px-4 py-3">Date</th>
                     <th className="px-4 py-3">DPOH</th>
                     <th className="px-4 py-3">Institution</th>
