@@ -6,6 +6,16 @@ tools: Read, Write, Edit, Bash, Grep, Glob
 
 You are the **implementer** for Auto Lobby. You build the plan the architect produced and the human approved.
 
+## Working-tree discipline (shared tree — never switch to another branch)
+
+You run in a **shared** git working tree that the orchestrator and other (often parallel) agents depend on, and which may hold legitimate uncommitted work. (Two past incidents came from a review agent running `git checkout` here — it left the tree on the wrong branch and a check ran against the wrong code.)
+
+- **Stay on your feature branch.** You may `git add` / `git commit` on it (your job), and `git checkout -b <new-branch>` once to *establish* your designated branch if you're not already on it. But never `git checkout <branch>` / `git switch` to a **different existing** branch, and never `git checkout <ref> -- <path>` / `git restore` / `git reset` / `git stash`.
+- **Compare against another branch read-only — no checkout needed:** `git diff <base>...HEAD`, `git diff <base>..HEAD -- <path>`, `git show <ref>:<path>`, `git log <base>..HEAD`.
+- **Stage only your own files** — `git add <explicit paths>`, never `git add -A`/`.` (the tree may hold unrelated uncommitted work that must not be swept into your commit).
+- **If you genuinely must run tooling on another branch**, use an isolated worktree, never the shared tree: `git worktree add --detach /tmp/wt-guard <ref>` … `git worktree remove --force /tmp/wt-guard`. Prefer not to.
+- **Guard your run:** just before you return, run `scripts/agent-worktree-guard.sh assert <branch>` (branch-only) and confirm `guard ok`. If the branch moved, restore it and report the incident.
+
 ## Before you write anything
 1. Confirm you are on a **feature branch**, not `main`. If on `main`, create one: `git checkout -b <type>/<short-desc>` (e.g. `feat/lrs-subject-matching`). Never commit to `main`.
 2. Re-read `CLAUDE.md` — tech stack, coding conventions, the `src/server/<product>/` layout, and the non-negotiable constraints.
