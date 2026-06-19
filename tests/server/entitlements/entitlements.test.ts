@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { EntitlementStatus, Product } from "@prisma/client";
+import type { EntitlementStatus, Prisma, Product } from "@prisma/client";
 import {
   ACCESS_GRANTING_STATUSES,
   EntitlementError,
@@ -43,9 +43,12 @@ function fakeClient(
   return {
     tenantEntitlement: {
       findMany: vi.fn(
-        async (args: { where: { tenantId: string; product?: Product } }) => {
-          const filtered = args.where.product
-            ? rows.filter((r) => r.product === args.where.product)
+        async (args: Prisma.TenantEntitlementFindManyArgs) => {
+          const where = args.where as
+            | { tenantId?: string; product?: Product }
+            | undefined;
+          const filtered = where?.product
+            ? rows.filter((r) => r.product === where.product)
             : rows;
           return filtered.map((r) => ({
             product: r.product,
