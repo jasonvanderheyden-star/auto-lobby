@@ -28,6 +28,18 @@
   /* Teal mapped to periwinkle so the logo gradient stays in-brand */
   --color-teal-100: #E0E4FC;
   --color-teal-700: #3B43B8;
+
+  /* Mist neutrals mapped onto stone-* */
+  --color-stone-50:  #F5F6FB;   /* Mist page (brand) */
+  --color-stone-100: #EEF0F5;
+  --color-stone-200: #E6E8F2;   /* Line (brand) */
+  --color-stone-300: #D5D8E4;
+  --color-stone-400: #9AA0B5;   /* Faint (brand) */
+  --color-stone-500: #6E7385;   /* Muted (brand) */
+  --color-stone-600: #565B6E;
+  --color-stone-700: #3D4254;
+  --color-stone-800: #2A2E3A;   /* Slate text (brand) */
+  --color-stone-900: #21243A;   /* Ink (brand) */
 }
 
 @keyframes chip-in {

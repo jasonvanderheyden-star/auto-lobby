@@ -133,7 +133,7 @@ export default async function RegistrySearchPage({ searchParams }: PageProps) {
                           <SubjectChip key={s} label={s} />
                         ))}
                         {r.subjects.length > 8 && (
-                          <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[11px] text-stone-400">
+                          <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[11px] text-stone-500">
                             +{r.subjects.length - 8} more
                           </span>
                         )}
