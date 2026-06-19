@@ -11,7 +11,7 @@ const { mockDb, mockAuth, mockCurrentUser } = vi.hoisted(() => ({
       create: vi.fn(),
       update: vi.fn(),
     },
-    agencyMember: { findFirst: vi.fn() },
+    agencyMember: { findFirst: vi.fn(), count: vi.fn() },
     auditEvent: { create: vi.fn() },
     tenantEntitlement: { findMany: vi.fn() },
   },
@@ -23,7 +23,7 @@ vi.mock("@clerk/nextjs/server", () => ({
   currentUser: mockCurrentUser,
 }));
 
-import { getTenantContext } from "@/server/tenant/context";
+import { getTenantContext, isAgencyMember } from "@/server/tenant/context";
 
 const TENANT = { id: "t1", clerkOrgId: "org_1", agencyId: null };
 const TENANT_MANAGED = { id: "t1", clerkOrgId: "org_1", agencyId: "agency_1" };
@@ -200,6 +200,31 @@ describe("getTenantContext — direct membership", () => {
       where: { id: "tm9" },
       data: { clerkUserId: "user_1" },
     });
+  });
+});
+
+describe("isAgencyMember — Agency nav gate (non-negotiable #7)", () => {
+  it("returns true when the user is a member of at least one agency", async () => {
+    mockDb.agencyMember.count.mockResolvedValue(1);
+    await expect(isAgencyMember("user_1")).resolves.toBe(true);
+    expect(mockDb.agencyMember.count).toHaveBeenCalledWith({
+      where: { clerkUserId: "user_1" },
+    });
+  });
+
+  it("returns false when the user is a member of no agency (in-house tenant)", async () => {
+    mockDb.agencyMember.count.mockResolvedValue(0);
+    await expect(isAgencyMember("user_1")).resolves.toBe(false);
+  });
+
+  it("edge case: returns false for a null userId WITHOUT hitting the db (default-closed)", async () => {
+    await expect(isAgencyMember(null)).resolves.toBe(false);
+    expect(mockDb.agencyMember.count).not.toHaveBeenCalled();
+  });
+
+  it("edge case: returns false for an undefined userId WITHOUT hitting the db", async () => {
+    await expect(isAgencyMember(undefined)).resolves.toBe(false);
+    expect(mockDb.agencyMember.count).not.toHaveBeenCalled();
   });
 });
 
