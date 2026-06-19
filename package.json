@@ -21,6 +21,7 @@
     "db:studio": "dotenv -e .env.local -- prisma studio",
     "db:seed": "prisma db seed",
     "ocl:import": "dotenv -e .env.local -- tsx scripts/import-ocl.ts",
+    "funding:import": "dotenv -e .env.local -- tsx scripts/import-funding-catalog.ts",
     "tenants:backfill": "dotenv -e .env.local -- tsx scripts/backfill-tenants.ts",
     "entitlements:backfill": "dotenv -e .env.local -- tsx scripts/backfill-entitlements.ts",
     "qa:seed": "dotenv -e .env.local -- tsx scripts/seed-qa-pilot.ts",
