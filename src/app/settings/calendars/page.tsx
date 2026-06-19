@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
-import { getTenantContext } from "@/server/tenant/context";
+import { getTenantContext, isAgencyMember } from "@/server/tenant/context";
 import { db } from "@/lib/db";
 import { relativeTime } from "@/lib/relative-time";
-import { BrandLockup } from "@/components/Brand";
+import { TopNav } from "@/components/TopNav";
 import { syncCalendarNow } from "@/server/calendar/actions";
 import { SyncNowButton } from "./sync-now-button";
 
@@ -103,9 +103,7 @@ export default async function CalendarSettingsPage({ searchParams }: PageProps) 
       {/* Nav */}
       <header className="border-b border-stone-200 bg-white">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-8">
-            <BrandLockup />
-          </div>
+          <TopNav active="settings" showAgency={await isAgencyMember(userId)} />
         </div>
       </header>
 

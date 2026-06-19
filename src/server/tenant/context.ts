@@ -222,6 +222,24 @@ export async function getTenantContext(): Promise<TenantContext> {
   );
 }
 
+// ─── isAgencyMember ───────────────────────────────────────────────────────
+
+/**
+ * Read-only signal: is this Clerk user a member of any Agency?
+ *
+ * Used to gate the Agency nav link (non-negotiable #7). True for both
+ * managed-client agency staff and an agency's own-tenant members; false for
+ * ordinary in-house tenants. Scoped strictly to the passed userId — no
+ * cross-tenant read.
+ */
+export async function isAgencyMember(
+  userId: string | null | undefined,
+): Promise<boolean> {
+  if (!userId) return false;
+  const count = await db.agencyMember.count({ where: { clerkUserId: userId } });
+  return count > 0;
+}
+
 // ─── withTenant ───────────────────────────────────────────────────────────
 
 /**

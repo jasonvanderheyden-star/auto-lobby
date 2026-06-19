@@ -198,7 +198,23 @@ Replace the green tile (`flex h-7 w-7 … rounded-md bg-gradient-to-br from-emer
 - `src/app/sign-up/[[...sign-up]]/page.tsx`
 - `src/app/onboarding/create-organization/page.tsx`
 
-(That's where `from-emerald-600 to-teal-700` appears today — 13 instances.) Consider lifting the nav into a shared layout component while you're in here, since the three-link nav is duplicated the same way.
+(That's where `from-emerald-600 to-teal-700` appears today — 13 instances.)
+
+### 5a. Fix the navigation drift (do this as part of the shared component)
+
+The top nav is hand-rolled separately on every page, and the copies have drifted — so links disappear depending on where you are. Today:
+
+| Page | Links shown |
+|------|-------------|
+| `/dashboard` | Dashboard · Registry · Calendars — **no Filings** |
+| `/filings` | Dashboard · Filings · Settings — no Registry |
+| `/agency` | Agency · Dashboard · Filings |
+| `/registry-search` | (only itself) |
+| `/settings/*` | Dashboard + sibling settings tab |
+
+Result: from `/dashboard` there is **no way to reach Filings** except the browser back button or typing the URL. This is a real navigation bug, not cosmetic.
+
+**Fix:** lift the nav into one shared `<TopNav active="..." />` component (alongside `Brand.tsx`) with a single canonical link set — **Dashboard · Filings · Registry · Settings** (plus Agency only for agency tenants) — rendered on every page, active item highlighted in periwinkle. This removes the drift and the duplicated logo tile in one pass.
 
 ---
 
@@ -267,6 +283,7 @@ The live UI uses the technical terms throughout (`MCR`, `DPOH`, etc.). Aligning 
 - Primary actions are periwinkle `#5B6CF0` (hover `#3B43B8`); page background is mist `#F5F6FB`; cards are paper white; text is slate `#2A2E3A`.
 - The mace mark replaces every green "AL" tile; wordmark is "Auto Lobby" with "powered by Whiphand."
 - Fonts render as Space Grotesk (UI) and JetBrains Mono (labels/data/status).
+- The same nav (Dashboard · Filings · Registry · Settings) appears on every page; from any page you can reach Filings. No drifted/missing links.
 - Success states use `#3FAE8E`, not the old emerald.
 - `pnpm lint && pnpm typecheck && pnpm test` pass; no behavioral diff.
 
