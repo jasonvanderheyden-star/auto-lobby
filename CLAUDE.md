@@ -30,6 +30,10 @@ Auto Lobby in detail: An agent runs continuously on the user's calendar, detects
 - `prototypes/Meeting-Inbox.html` — passive activity log (demoted from primary UX)
 - `prisma/schema.prisma` — starter data model, multi-tenant, event-sourced audit trail
 
+**Product 03 — Funding Navigator (Grants & Funding Intelligence), design phase:**
+- `docs/Grants-Funding-Roadmap.md` — product roadmap: loop, data moat, modules, expert features, phases, revenue
+- `docs/Funding-G0-Data-Foundation-Spec.md` — engineering spec for Phase G0 (build-ready); run the data spike (`scripts/spike-funding-data.ts`) before committing to G0a
+
 Parked ideas (don't build, but check before making structural decisions that might foreclose them):
 
 - `docs/Naming-Parked.md` — product name decision (resume once ≥1 paying customer is under contract)

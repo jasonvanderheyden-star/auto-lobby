@@ -38,7 +38,7 @@ From eligibility discovery to ready-to-submit application drafts.
 
 - **Market:** Any Canadian company deploying capital or running R&D. 600+ federal programs, $30B+ annual disbursements. Largest TAM on the platform.
 - **Core loop:** Company profile → eligibility matching against all programs → ranked opportunities → retrieve guidelines → generate application draft → team completes → submit
-- **Status:** Next product after Intelligence
+- **Status:** Next product after Intelligence. Design docs landed 2026-06-19: `docs/Grants-Funding-Roadmap.md` (product roadmap) + `docs/Funding-G0-Data-Foundation-Spec.md` (Phase G0 build spec). All-levels coverage targeted; federal data lands first (G0/G1), provincial + municipal + funded orgs in G2.
 - **Revenue model:** SaaS + optional success fee (0.5–1.5% of grant value on funded applications)
 - **Deep Sky relevance:** Actively pursuing NRCan, SDTC, Canada Growth Fund programs — ideal pilot
 
