@@ -99,21 +99,115 @@ export async function resolveLatestCatalogXlsx(pkgId: string): Promise<CkanResou
 }
 
 /**
- * Plain DataStore search helper (kept for G0b reuse — G0a does not call it).
+ * Plain DataStore search helper (G0b reuse).
  *
- * Note the spike's CKAN quirks: `datastore_search_sql` is disabled (HTTP 400)
- * and `datastore_search` with `limit=0` + `filters` returns HTTP 409. Page with
- * `limit`/`offset` instead.
+ * Note the spike's CKAN quirks: `datastore_search_sql` is disabled (HTTP 400),
+ * `datastore_search` with `limit=0` + `filters` returns HTTP 409, and the `q`
+ * full-text param 409s as well. Source-side range filtering is therefore
+ * impossible — but `sort=<col> desc` works, and dates are ISO `YYYY-MM-DD`
+ * text, so G0b pages newest-first and stops once rows fall below the cutoff.
+ *
+ * `sort` is a CKAN sort expression (e.g. "agreement_start_date desc").
+ * `fields` is a projection — only these columns are returned (smaller payloads).
  */
 export async function datastoreSearch(
   resourceId: string,
-  opts: { limit?: number; offset?: number } = {},
+  opts: { limit?: number; offset?: number; sort?: string; fields?: string[] } = {},
 ): Promise<DatastoreSearchResult> {
-  return ckan<DatastoreSearchResult>("datastore_search", {
+  const params: Record<string, string> = {
     resource_id: resourceId,
     limit: String(opts.limit ?? 100),
     offset: String(opts.offset ?? 0),
-  });
+  };
+  if (opts.sort) params.sort = opts.sort;
+  if (opts.fields && opts.fields.length > 0) params.fields = opts.fields.join(",");
+  return ckan<DatastoreSearchResult>("datastore_search", params);
+}
+
+// ─── Sequential paginator with backoff (G0b) ────────────────────────────────
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Exponential backoff with jitter, retrying only on 409 / 5xx. CKAN's
+ * disbursement endpoint is large and occasionally 409s under burst (spike
+ * observation); transient 5xx are likewise retryable. Other errors throw.
+ */
+async function withCkanBackoff<T>(
+  fn: () => Promise<T>,
+  label: string,
+  maxAttempts = 6,
+): Promise<T> {
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await fn();
+    } catch (err) {
+      attempt++;
+      const msg = err instanceof Error ? err.message : String(err);
+      const retryable = /HTTP (409|5\d\d)/.test(msg);
+      if (!retryable || attempt >= maxAttempts) throw err;
+      // Exponential backoff (base 500ms) capped at 16s, plus up to 1s jitter.
+      const delay = Math.min(500 * 2 ** (attempt - 1), 16_000) + Math.random() * 1000;
+      console.warn(
+        `  ⚠ ${label}: ${msg} — retry ${attempt}/${maxAttempts - 1} in ${Math.round(delay)}ms`,
+      );
+      await sleep(delay);
+    }
+  }
+}
+
+export type DatastoreSearchAllOpts = {
+  sort: string;
+  fields?: string[];
+  pageSize?: number;
+  /**
+   * Break predicate evaluated against the LAST record of each fetched page.
+   * Return `true` to stop paging AFTER processing the current page. Used by
+   * G0b for sorted-desc stop-at-cutoff: once a page's last (oldest-in-page)
+   * row falls below the cutoff, no later page can be in-window.
+   */
+  stopWhen?: (lastRecord: Record<string, unknown>) => boolean;
+  /** Optional per-page callback (e.g. for progress logging). */
+  onPage?: (records: Record<string, unknown>[], offset: number, total: number) => void;
+};
+
+/**
+ * Sequentially page an entire (or stop-at-cutoff truncated) DataStore resource.
+ *
+ * Sequential — NOT parallel — to keep load off the endpoint and respect the
+ * backoff. Stops when a page returns fewer than `pageSize` rows (exhausted) or
+ * when `stopWhen(lastRecord)` returns true (G0b cutoff). Returns every record
+ * fetched up to and including the page that tripped `stopWhen`.
+ */
+export async function datastoreSearchAll(
+  resourceId: string,
+  opts: DatastoreSearchAllOpts,
+): Promise<Record<string, unknown>[]> {
+  const pageSize = opts.pageSize ?? 10_000;
+  const out: Record<string, unknown>[] = [];
+  let offset = 0;
+  for (;;) {
+    const searchOpts: { limit: number; offset: number; sort: string; fields?: string[] } = {
+      limit: pageSize,
+      offset,
+      sort: opts.sort,
+    };
+    if (opts.fields) searchOpts.fields = opts.fields;
+    const page = await withCkanBackoff(
+      () => datastoreSearch(resourceId, searchOpts),
+      `datastore_search offset=${offset}`,
+    );
+    const records = page.records;
+    out.push(...records);
+    opts.onPage?.(records, offset, page.total);
+
+    if (records.length < pageSize) break; // resource exhausted
+    const last = records[records.length - 1]!;
+    if (opts.stopWhen?.(last)) break; // cutoff tripped — no later page is in-window
+    offset += pageSize;
+  }
+  return out;
 }
 
 // ─── XLSX (SpreadsheetML) reader ────────────────────────────────────────────
