@@ -14,7 +14,7 @@
  *   Source-side range filtering is impossible (q→409, datastore_search_sql→400,
  *   filters=equality-only), but `sort=agreement_start_date desc` works and dates
  *   are ISO "YYYY-MM-DD" text. So we page newest-first and STOP once a page's
- *   last (oldest-in-page) row falls below cutoff = today − 3 years. Future-dated
+ *   last (oldest-in-page) row falls below cutoff = today − 2 years. Future-dated
  *   rows (real future agreement starts) are KEPT. Junk sentinel dates (e.g.
  *   1899-12-30) sort to the bottom → excluded for free; any in-window row whose
  *   date doesn't parse to a real date >= cutoff is also dropped.
@@ -50,7 +50,7 @@ const DATA_DIR = path.join(process.cwd(), "data");
 const DISBURSE_PKG = "432527ab-7aac-45b5-81d6-7597107a7013"; // Grants & Contributions
 const DISBURSE_RESOURCE = "1d15a62f-5656-49ad-8c88-f40ce689d831"; // real CSV (NOT 4e4db232 nil)
 const FEED = "ckan:proactive-disclosure-grants-contributions";
-const WINDOW_YEARS = 3;
+const WINDOW_YEARS = 2;
 const PAGE_SIZE = 10_000;
 const BATCH_SIZE = 1_000;
 const CACHE_FILE = path.join(DATA_DIR, "disbursements-window.json");
@@ -66,10 +66,14 @@ const FIELDS = [
 ] as const;
 
 // Wide count-band tripwire (feed-shape change detection — fail loudly outside).
-// Spec estimate ≈265–280k retained at the 3-year window; lumpy. Band is wide on
-// purpose: its job is to catch a feed-shape break, not to police the exact count.
-const RETAINED_MIN = 230_000;
-const RETAINED_MAX = 320_000;
+// Window trimmed to 2 years to keep re-imports clear of Neon's 512 MB hard cap
+// (the 3-year window's ~189 MB table doubled transiently during TRUNCATE+reinsert
+// and breached the ceiling). ~180k retained expected at 2y; lumpy. Band is wide
+// on purpose: its job is to catch a feed-shape break, not to police the exact count.
+// Deeper history, if needed for win-probability, comes as pre-computed aggregates
+// (per spec), not raw rows.
+const RETAINED_MIN = 120_000;
+const RETAINED_MAX = 260_000;
 
 const db = new PrismaClient();
 

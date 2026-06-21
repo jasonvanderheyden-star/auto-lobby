@@ -149,10 +149,11 @@ export function mapRecordToDisbursement(
 }
 
 /**
- * Runtime cutoff = today − `years` (default 3), at UTC midnight. Computed at
+ * Runtime cutoff = today − `years` (default 2 — windowed to fit Neon 0.5 GB
+ * with re-runnable imports; see import script), at UTC midnight. Computed at
  * import time so the window slides; not a hardcoded date.
  */
-export function cutoffFromNow(years = 3, now: Date = new Date()): Date {
+export function cutoffFromNow(years = 2, now: Date = new Date()): Date {
   return new Date(
     Date.UTC(now.getUTCFullYear() - years, now.getUTCMonth(), now.getUTCDate()),
   );
